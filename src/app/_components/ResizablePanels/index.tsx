@@ -1,0 +1,60 @@
+'use client';
+
+import { ResizableHandle, ResizablePanel, ResizablePanelGroup } from "@/components/ui/resizable";
+import { Messages } from "../messages";
+import { ChatInput } from "../input";
+import { usePanelStore } from "@/store/panelStore";
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
+import { Artifacts } from "./Artifacts";
+import { Sources } from "./Sources";
+import { Settings } from "./Settings";
+import type { ComponentProps } from "react";
+
+interface ResizablePanelsProps extends Partial<ComponentProps<typeof ResizablePanel>> {
+  children: React.ReactNode;
+}
+
+export function ResizablePanels({ children, ...panelProps }: ResizablePanelsProps) {
+  const isPanelVisible = usePanelStore((state) => state.isPanelVisible);
+
+  return (
+    <ResizablePanelGroup direction="horizontal">
+      <ResizablePanel 
+        defaultSize={50} 
+        className="flex flex-col items-center justify-center gap-1"
+        {...panelProps}
+      >
+        {children}
+        <ChatInput />
+      </ResizablePanel>
+
+      {isPanelVisible && (
+        <>
+          <ResizableHandle withHandle className="transition-opacity duration-300 ease-in-out" />
+          <ResizablePanel 
+            minSize={15}
+            maxSize={50}
+            className="transition-all duration-300 ease-in-out p-2"
+          >
+            <Tabs defaultValue="artifacts" className="h-full">
+              <TabsList className="w-full rounded-md">
+                <TabsTrigger value="artifacts">Artifacts</TabsTrigger>
+                <TabsTrigger value="sources">Sources</TabsTrigger>
+                <TabsTrigger value="settings">Settings</TabsTrigger>
+              </TabsList>
+              <TabsContent value="artifacts">
+                <Artifacts />
+              </TabsContent>
+              <TabsContent value="sources">
+                <Sources />
+              </TabsContent>
+              <TabsContent value="settings">
+                <Settings />
+              </TabsContent>
+            </Tabs>
+          </ResizablePanel>
+        </>
+      )}
+    </ResizablePanelGroup>
+  );
+}

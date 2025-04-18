@@ -1,0 +1,9 @@
+[project]
+name = "0bs"
+version = "0.1.0"
+requires-python = ">=3.12"
+dependencies = [
+    "docling>=2.30.0",
+    "docling-serve>=0.7.0",
+    "ninja>=1.11.1.4",
+]
