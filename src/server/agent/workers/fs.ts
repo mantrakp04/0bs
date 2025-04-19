@@ -5,8 +5,8 @@ import {
   Command,
 } from "@langchain/langgraph";
 import { type RunnableConfig } from "@langchain/core/runnables";
-import { HumanMessage, ToolMessage } from "@langchain/core/messages";
-import { FsState, SupervisorState } from "../state";
+import { HumanMessage, type ToolMessage } from "@langchain/core/messages";
+import { FsState, type SupervisorState } from "../state";
 import * as prompts from "../prompt";
 import { model } from "../model";
 import { getTools } from "./tools";

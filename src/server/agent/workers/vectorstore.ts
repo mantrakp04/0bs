@@ -1,7 +1,7 @@
 import { vectorStore } from "@/server/api/routers/projects/sources"
 import { createRetrieverTool } from "langchain/tools/retriever";
 import { ToolNode } from "@langchain/langgraph/prebuilt";
-import { VectorstoreState, SupervisorState } from "../state";
+import { VectorstoreState, type SupervisorState } from "../state";
 import { START, END, StateGraph } from "@langchain/langgraph";
 import { z } from "zod";
 import { model } from "../model";

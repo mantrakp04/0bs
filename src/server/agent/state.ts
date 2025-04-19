@@ -1,7 +1,7 @@
 import { z } from "zod";
 import type { BaseMessage } from "@langchain/core/messages";
 import { Annotation, END } from "@langchain/langgraph";
-import { step } from "./types";
+import { type step } from "./types";
 
 export const IndexState = Annotation.Root({
   useManus: Annotation<boolean>({

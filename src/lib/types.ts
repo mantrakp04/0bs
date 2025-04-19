@@ -1,5 +1,5 @@
-import { Document } from "@langchain/core/documents";
-import { sources } from "@/server/db/schema";
+import { type Document } from "@langchain/core/documents";
+import { type sources } from "@/server/db/schema";
 
 export type ProjectSourceMetadata = Partial<typeof sources.$inferInsert>;
 

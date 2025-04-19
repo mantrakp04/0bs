@@ -13,7 +13,7 @@ import { db } from "@/server/db";
 import { chats } from "@/server/db/schema";
 import { eq } from "drizzle-orm";
 import { type MessageContentComplex } from "@langchain/core/messages";
-import { AgentState } from "./state";
+import { type AgentState } from "./state";
 import { model } from "./model";
 import { createReactAgent } from "@langchain/langgraph/prebuilt";
 

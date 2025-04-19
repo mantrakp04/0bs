@@ -5,7 +5,7 @@ import {
 } from "@langchain/langgraph";
 import { type RunnableConfig } from "@langchain/core/runnables";
 import { HumanMessage } from "@langchain/core/messages";
-import { IndexState, PlanState } from "./state";
+import { type IndexState, PlanState } from "./state";
 import { plan, response, replan, step } from "./types";
 import * as prompts from "./prompt";
 import { model } from "./model";
