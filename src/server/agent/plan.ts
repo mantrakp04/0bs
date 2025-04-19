@@ -35,7 +35,10 @@ const executeStep = async (state: typeof PlanState.State, config: RunnableConfig
     `Substeps: ${task.substeps.join("\n")}`;
   const messages = [new HumanMessage(input)];
   const response = await supervisorWorkflow.invoke({ messages }, config);
-  return { messages: response.messages };
+  return {
+    pastSteps: [[task, response.messages[response.messages.length - 1]?.content.toString() ?? ""]],
+    plan: state.plan.slice(1)
+  };
 }
 
 const replanStep = async (state: typeof PlanState.State, config: RunnableConfig) => {
