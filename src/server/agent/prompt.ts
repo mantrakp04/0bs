@@ -12,7 +12,6 @@ export const plannerPrompt = ChatPromptTemplate.fromMessages([
     "1. A clear description of the step\n" +
     "2. 1-4 substeps that break down how to accomplish this step, depending on the complexity of the step."],
   new MessagesPlaceholder("messages"),
-  ["human", "Task: {input}"]
 ]);
 
 // Replanner prompt
@@ -44,13 +43,7 @@ export const supervisorPrompt = ChatPromptTemplate.fromMessages([
     "Given the task description and substeps, select the most appropriate worker." +
     "If the task is complete, respond with END."
 ],
-  new MessagesPlaceholder("messages"),
-  ["human", "Based on this information, which worker should handle this task?" +
-    `Respond with one of: fs_worker, shell_worker, browser_worker, vectorstore_worker, ask_user or ${String(END)} if complete.` +
-    "Provide detailed instructions for the selected worker." +
-    "Task: {task}" +
-    "Substeps: {substeps}"
-  ]
+  new MessagesPlaceholder("messages")
 ]);
 
 // Vectorstore worker prompts

@@ -1,12 +1,12 @@
 import { createReactAgent } from "@langchain/langgraph/prebuilt";
 import { HumanMessage } from "@langchain/core/messages";
 import { type RunnableConfig } from "@langchain/core/runnables";
-import { type AgentState } from "../state";
+import { type SupervisorState } from "../state";
 import { getTools } from "./tools";
 import * as prompts from "../prompt";
 import { model } from "../model";
 
-export const callShellWorkerModel = async (state: typeof AgentState.State, config: RunnableConfig) => {
+export const callShellWorker = async (state: typeof SupervisorState.State, config: RunnableConfig) => {
   const { shell_toolkit } = await getTools(config);
   const agent = createReactAgent({ 
     llm: model, 
@@ -19,6 +19,6 @@ export const callShellWorkerModel = async (state: typeof AgentState.State, confi
   }, config);
 
   return {
-    supervisor_messages: [output.messages[output.messages.length - 1]]
+    messages: [output.messages[output.messages.length - 1]]
   };
 };

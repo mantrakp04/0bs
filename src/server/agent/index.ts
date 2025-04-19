@@ -3,26 +3,26 @@ import {
   END,
   START
 } from "@langchain/langgraph";
-import { AgentState } from "./state";
+import { IndexState } from "./state";
 import { callReActAgent } from "./re-act";
-import { workflow as planWorkflow } from "./plan";
+import { callPlanAndExecuteAgent } from "./plan";
 
-const routeInitialNode = async (state: typeof AgentState.State) => {
-  return state.useManus ? "planExecuteAgent" : "reactAgent";
+const routeInitialNode = async (state: typeof IndexState.State) => {
+  return state.useManus ? "planAndExecuteAgent" : "reactAgent";
 }
 
-const workflow = new StateGraph(AgentState)
+const workflow = new StateGraph(IndexState)
   .addNode("router", routeInitialNode)
   .addNode("reactAgent", callReActAgent)
-  .addNode("planExecuteAgent", planWorkflow.compile())
+  .addNode("planAndExecuteAgent", callPlanAndExecuteAgent)
 
   .addEdge(START, "router")
 
   .addEdge("router", "reactAgent")
   .addEdge("reactAgent", END)
 
-  .addEdge("router", "planExecuteAgent")
-  .addEdge("planExecuteAgent", END)
+  .addEdge("router", "planAndExecuteAgent")
+  .addEdge("planAndExecuteAgent", END)
 
 export const agent = workflow.compile();
 

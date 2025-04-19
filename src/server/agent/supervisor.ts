@@ -7,35 +7,19 @@ import {
 } from "@langchain/langgraph";
 import { type RunnableConfig } from "@langchain/core/runnables";
 import { HumanMessage } from "@langchain/core/messages";
-import { AgentState } from "./state";
-import { router, step } from "./types";
+import { SupervisorState } from "./state";
+import { router } from "./types";
 import * as prompts from "./prompt";
 import { model } from "./model";
-import { callShellWorkerModel } from "./workers/shell";
-import { callBrowserWorkerModel } from "./workers/browser";
-import { workflow as fsWorkflow } from "./workers/fs";
-import { workflow as vectorstoreWorkflow } from "./workers/vectorstore";
+import { callShellWorker } from "./workers/shell";
+import { callBrowserWorker } from "./workers/browser";
+import { callFsWorkflow } from "./workers/fs";
+import { callVectorstoreWorkflow } from "./workers/vectorstore";
 
-const callSupervisorModel = async (state: typeof AgentState.State, config: RunnableConfig) => {
-  const task = state.plan[0];
-  if (!task) {
-    return {
-      next: END,
-      instruction: "No tasks remaining in plan"
-    };
-  }
-  const parsedTask = step.parse(task);
+const callSupervisor = async (state: typeof SupervisorState.State, config: RunnableConfig) => {
   const modelWithTools = prompts.supervisorPrompt.pipe(model.withStructuredOutput(router));
   const response = await modelWithTools.invoke({
-    messages: [
-      new HumanMessage(
-        `Based on this information, which worker should handle this task?
-Respond with one of: fs_worker, shell_worker, browser_worker, vectorstore_worker, ask_user or END if complete.
-Provide detailed instructions for the selected worker.
-Task: ${parsedTask.description}
-Substeps: ${parsedTask.substeps.join("\n")}`
-      )
-    ],
+    messages: state.messages,
   }, config);
 
   const goto = response.next;
@@ -59,7 +43,7 @@ Substeps: ${parsedTask.substeps.join("\n")}`
   })
 }
 
-const callAskUserModel = async (state: typeof AgentState.State, config: RunnableConfig) => {
+const callAskUserModel = async (state: typeof SupervisorState.State, config: RunnableConfig) => {
   // Get the instruction from the state
   const { instruction } = state;
   
@@ -79,17 +63,22 @@ const callAskUserModel = async (state: typeof AgentState.State, config: Runnable
   });
 };
 
-export const workflow = new StateGraph(AgentState)
-  .addNode("supervisor", callSupervisorModel)
-  .addNode("browser_worker", callBrowserWorkerModel)
-  .addNode("shell_worker", callShellWorkerModel)
-  .addNode("vectorstore_worker", vectorstoreWorkflow.compile())
-  .addNode("fs_worker", fsWorkflow.compile(), {
+const workers = ["browser_worker", "shell_worker", "vectorstore_worker", "fs_worker", "ask_user"] as const;
+
+export const workflow = new StateGraph(SupervisorState)
+  .addNode("supervisor", callSupervisor, {
+    ends: ["browser_worker", "shell_worker", "vectorstore_worker", "fs_worker", "ask_user", END]
+  })
+  .addNode("browser_worker", callBrowserWorker)
+  .addNode("shell_worker", callShellWorker)
+  .addNode("vectorstore_worker", callVectorstoreWorkflow)
+  .addNode("fs_worker", callFsWorkflow, {
     ends: ["supervisor"]
   })
   .addNode("ask_user", callAskUserModel);
-  const workers = ["browser_worker", "shell_worker", "vectorstore_worker", "fs_worker", "ask_user"] as const;
   workers.forEach(worker => {
     workflow.addEdge(worker, "supervisor");
   });
-  workflow.addEdge(START, "supervisor");
+  workflow.addEdge(START, "supervisor")
+
+export const compiledWorkflow = workflow.compile();

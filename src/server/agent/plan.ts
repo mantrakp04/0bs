@@ -5,56 +5,81 @@ import {
 } from "@langchain/langgraph";
 import { type RunnableConfig } from "@langchain/core/runnables";
 import { HumanMessage } from "@langchain/core/messages";
-import { AgentState } from "./state";
-import { plan, response, replan } from "./types";
+import { IndexState, PlanState } from "./state";
+import { plan, response, replan, step } from "./types";
 import * as prompts from "./prompt";
 import { model } from "./model";
-import { workflow as supervisorWorkflow } from "./supervisor";
+import { compiledWorkflow as supervisorWorkflow } from "./supervisor";
 
-const planStep = async (state: typeof AgentState.State, config: RunnableConfig) => {
+const planStep = async (state: typeof PlanState.State, config: RunnableConfig) => {
   const { messages } = state;
-
-  const input = messages[messages.length - 1]?.content;
-  const messagesWithoutInput = messages.slice(0, -1);
-
   const modelWithTools = prompts.plannerPrompt.pipe(model.withStructuredOutput(plan));
   const response = await modelWithTools.invoke({
-    input: input,
-    messages: messagesWithoutInput
+    messages: messages
   }, config);
   return { plan: response.steps };
 }
 
-const replanStep = async (state: typeof AgentState.State, config: RunnableConfig) => {
-  const { plan, pastSteps } = state;
+const executeStep = async (state: typeof PlanState.State, config: RunnableConfig) => {
+  const task = step.parse(state.plan[0]);
+  if (!task) {
+    return {
+      next: END,
+      instruction: "No tasks remaining in plan"
+    };
+  }
+  const input = "Based on this information, which worker should handle this task?" +
+    `Respond with one of: fs_worker, shell_worker, browser_worker, vectorstore_worker, ask_user or ${String(END)} if complete.` +
+    "Provide detailed instructions for the selected worker." +
+    `Task: ${task.description}` +
+    `Substeps: ${task.substeps.join("\n")}`;
+  const messages = [new HumanMessage(input)];
+  const response = await supervisorWorkflow.invoke({ messages }, config);
+  return { messages: response.messages };
+}
 
-  const input = pastSteps[pastSteps.length - 1]?.content;
+const replanStep = async (state: typeof PlanState.State, config: RunnableConfig) => {
+  const { plan, pastSteps, messages } = state;
+
   const modelWithTools = prompts.replannerPrompt.pipe(model.withStructuredOutput(replan));
   const response = await modelWithTools.invoke({
-    input: input,
     plan: plan,
-    pastSteps: pastSteps
+    pastSteps: pastSteps.map(([step, result]) => `${step}: ${result}`).join("\n"),
+    messages: messages
   }, config);
   
   // Handle the response based on the action type
   if ('response' in response.action) {
-    return { messages: [new HumanMessage(response.action.response)], respond: true };
+    return { response: response.action.response };
   } else {
-    return { plan: response.action.steps, respond: false };
+    return { plan: response.action.steps };
   }
 }
 
-const shouldContinue = async (state: typeof AgentState.State) => {
-  const { respond } = state;
-  return respond ? END : "agent";
+const shouldContinue = async (state: typeof PlanState.State) => {
+  const { response } = state;
+  return response !== "" ? END : "agent";
 }
 
-export const workflow = new StateGraph(AgentState)
-  .addNode("plan", planStep)
-  .addNode("agent", supervisorWorkflow.compile())
+export const workflow = new StateGraph(PlanState)
+  .addNode("planner", planStep)
+  .addNode("agent", executeStep)
   .addNode("replan", replanStep)
 
-  .addEdge(START, "plan")
-  .addEdge("plan", "agent")
+  .addEdge(START, "planner")
+  .addEdge("planner", "agent")
   .addEdge("agent", "replan")
   .addConditionalEdges("replan", shouldContinue, [END, "agent"])
+  .compile()
+
+export const callPlanAndExecuteAgent = async (state: typeof IndexState.State, config: RunnableConfig) => {
+  const { messages } = state;
+
+  const plan = await workflow.invoke({
+    messages: messages
+  }, config);
+
+  return {
+    messages: [new HumanMessage(plan.response)],
+  }
+}

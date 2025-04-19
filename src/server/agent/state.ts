@@ -15,21 +15,21 @@ export const IndexState = Annotation.Root({
 })
 
 export const PlanState = Annotation.Root({
-  input: Annotation<string>({
-    reducer: (x, y) => y ?? x ?? "",
-    default: () => "",
+  messages: Annotation<BaseMessage[]>({
+    reducer: (x, y) => x.concat(y),
+    default: () => [],
   }),
   plan: Annotation<typeof step[]>({
     reducer: (x, y) => y ?? x ?? [],
     default: () => [],
   }),
-  plan_messages: Annotation<BaseMessage[]>({
+  pastSteps: Annotation<[string, string][]>({
     reducer: (x, y) => x.concat(y),
     default: () => [],
   }),
-  respond: Annotation<boolean>({
-    reducer: (x, y) => y ?? x ?? false,
-    default: () => false,
+  response: Annotation<string>({
+    reducer: (x, y) => y ?? x ?? "",
+    default: () => "",
   }),
 })
 
@@ -65,6 +65,10 @@ export const VectorstoreState = Annotation.Root({
 
 export const FsState = Annotation.Root({
   messages: Annotation<BaseMessage[]>({
+    reducer: (x, y) => x.concat(y),
+    default: () => [],
+  }),
+  supervisor_messages: Annotation<BaseMessage[]>({
     reducer: (x, y) => x.concat(y),
     default: () => [],
   }),

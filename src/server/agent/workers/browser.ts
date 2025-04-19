@@ -1,12 +1,12 @@
 import { createReactAgent } from "@langchain/langgraph/prebuilt";
 import { HumanMessage } from "@langchain/core/messages";
 import { type RunnableConfig } from "@langchain/core/runnables";
-import { type AgentState } from "../state";
+import { type SupervisorState } from "../state";
 import { getTools } from "./tools";
 import * as prompts from "../prompt";
 import { model } from "../model";
 
-export const callBrowserWorkerModel = async (state: typeof AgentState.State, config: RunnableConfig) => {
+export const callBrowserWorker = async (state: typeof SupervisorState.State, config: RunnableConfig) => {
   const { browser_toolkit } = await getTools(config);
   const agent = createReactAgent({ 
     llm: model, 
@@ -19,6 +19,6 @@ export const callBrowserWorkerModel = async (state: typeof AgentState.State, con
   }, config);
 
   return {
-    supervisor_messages: [output.messages[output.messages.length - 1]]
+    messages: [output.messages[output.messages.length - 1]]
   };
 };
