@@ -23,6 +23,7 @@ async function processWithDocling(buffer: Buffer, fileName: string, fileType: st
 
   // Add default parameters - can be customized based on needs
   formData.append('to_formats', 'md');
+  formData.append('image_export_mode', 'placeholder')
   
   const response = await fetch(`${env.DOCLING_API_URL}/v1alpha/convert/file`, {
     method: 'POST',

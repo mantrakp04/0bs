@@ -9,6 +9,7 @@ import { Artifacts } from "./Artifacts";
 import { Sources } from "./Sources";
 import { Settings } from "./Settings";
 import type { ComponentProps } from "react";
+import type { TabValue } from "@/store/panelStore";
 
 interface ResizablePanelsProps extends Partial<ComponentProps<typeof ResizablePanel>> {
   children: React.ReactNode;
@@ -16,9 +17,11 @@ interface ResizablePanelsProps extends Partial<ComponentProps<typeof ResizablePa
 
 export function ResizablePanels({ children, ...panelProps }: ResizablePanelsProps) {
   const isPanelVisible = usePanelStore((state) => state.isPanelVisible);
+  const activeTab = usePanelStore((state) => state.activeTab);
+  const setActiveTab = usePanelStore((state) => state.setActiveTab);
 
   return (
-    <ResizablePanelGroup direction="horizontal">
+    <ResizablePanelGroup direction="horizontal" className="h-screen">
       <ResizablePanel 
         defaultSize={50} 
         className="flex flex-col items-center justify-center gap-1"
@@ -36,7 +39,11 @@ export function ResizablePanels({ children, ...panelProps }: ResizablePanelsProp
             maxSize={50}
             className="transition-all duration-300 ease-in-out p-2"
           >
-            <Tabs defaultValue="artifacts" className="h-full">
+            <Tabs 
+              value={activeTab} 
+              onValueChange={(value) => setActiveTab(value as TabValue)}
+              className="h-full"
+            >
               <TabsList className="w-full rounded-md">
                 <TabsTrigger value="artifacts">Artifacts</TabsTrigger>
                 <TabsTrigger value="sources">Sources</TabsTrigger>

@@ -34,6 +34,8 @@ export const posts = createTable(
 export const chats = createTable("chat", (d) => ({
   id: d.integer().primaryKey().generatedByDefaultAsIdentity(),
   name: d.varchar({ length: 256 }),
+  ciSandboxId: d.varchar({ length: 255 }),
+  manusSandboxId: d.varchar({ length: 255 }),
   createdById: d.varchar({ length: 255 }).notNull().references(() => users.id),
   createdAt: d.timestamp({ withTimezone: true }).default(sql`CURRENT_TIMESTAMP`).notNull(),
   updatedAt: d.timestamp({ withTimezone: true }).$onUpdate(() => new Date()),

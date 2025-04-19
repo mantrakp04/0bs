@@ -14,14 +14,20 @@ import {
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
 import { useFileUploadStore } from "@/store/uploadStore";
+import { useProjectStore } from "@/store/projectStore";
 import { useRef } from "react";
 import { api } from "@/trpc/react";
 import { CreateProjectDialog } from "./CreateProjectDialog";
+import { type InferSelectModel } from "drizzle-orm";
+import { type projects } from "@/server/db/schema";
+
+type Project = InferSelectModel<typeof projects>;
 
 export function AddButton() {
   const uploadFile = useFileUploadStore((state) => state.uploadFile);
   const isUploading = useFileUploadStore((state) => state.isUploading);
   const error = useFileUploadStore((state) => state.error);
+  const setSelectedProject = useProjectStore((state) => state.setSelectedProject);
   const fileInputRef = useRef<HTMLInputElement>(null);
   
   // Fetch 3 most recent projects with stale-while-revalidate
@@ -46,6 +52,11 @@ export function AddButton() {
         fileInputRef.current.value = '';
       }
     }
+  };
+
+  const handleProjectSelect = (project: Project) => {
+    setSelectedProject(project);
+    // The panel visibility is handled in the project store
   };
 
   return (
@@ -80,13 +91,16 @@ export function AddButton() {
               Use a project
             </DropdownMenuSubTrigger>
             <DropdownMenuSubContent className="ml-2">
-              <DropdownMenuSeparator />
               {recentProjects?.map((project) => (
-                <DropdownMenuItem key={project.id}>
+                <DropdownMenuItem 
+                  key={project.id}
+                  onSelect={() => handleProjectSelect(project)}
+                >
                   <FolderIcon className="mr-2 h-4 w-4" />
                   {project.name}
                 </DropdownMenuItem>
               ))}
+              <DropdownMenuSeparator />
               <CreateProjectDialog />
             </DropdownMenuSubContent>
           </DropdownMenuSub>

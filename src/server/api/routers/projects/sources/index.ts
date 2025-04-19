@@ -17,9 +17,10 @@ import {
 } from "@langchain/community/vectorstores/pgvector";
 
 const embeddings = new GoogleGenerativeAIEmbeddings({
-  model: "gemini-embedding-exp-03-07",
-  taskType: TaskType.RETRIEVAL_DOCUMENT,
+  model: "text-embedding-004",
   apiKey: env.GOOGLE_GENAI_API_KEY,
+  taskType: TaskType.RETRIEVAL_DOCUMENT,
+  title: "Document title",
 });
 
 const config = {
@@ -34,9 +35,10 @@ const config = {
     metadataColumnName: "metadata",
   },
   distanceStrategy: "cosine" as DistanceStrategy,
+  dimensions: 768,
 };
 
-const vectorStore = await PGVectorStore.initialize(embeddings, config);
+export const vectorStore = await PGVectorStore.initialize(embeddings, config);
 
 export const sourcesRouter = createTRPCRouter({
   getSources: protectedProcedure

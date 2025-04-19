@@ -18,7 +18,6 @@ export const env = createEnv({
       .enum(["development", "test", "production"])
       .default("development"),
     OPENROUTER_API_KEY: z.string(),
-    EB2_API_KEY: z.string(),
     R2_ACCOUNT_ID: z.string().min(1),
     R2_ACCESS_KEY_ID: z.string().min(1),
     R2_SECRET_ACCESS_KEY: z.string().min(1),
@@ -27,6 +26,8 @@ export const env = createEnv({
       process.env.NODE_ENV === "production" ? "prod" : "dev"
     ),
     GOOGLE_GENAI_API_KEY: z.string().min(1),
+    E2B_API_KEY: z.string().min(1),
+    TAVILY_API_KEY: z.string().min(1),
   },
 
   /**
@@ -52,9 +53,10 @@ export const env = createEnv({
     R2_ACCESS_KEY_ID: process.env.R2_ACCESS_KEY_ID,
     R2_SECRET_ACCESS_KEY: process.env.R2_SECRET_ACCESS_KEY,
     R2_BUCKET_NAME: process.env.R2_BUCKET_NAME || (process.env.NODE_ENV === "production" ? "prod" : "dev"),
-    EB2_API_KEY: process.env.EB2_API_KEY,
     DOCLING_API_URL: process.env.DOCLING_API_URL,
     GOOGLE_GENAI_API_KEY: process.env.GOOGLE_GENAI_API_KEY,
+    E2B_API_KEY: process.env.E2B_API_KEY,
+    TAVILY_API_KEY: process.env.TAVILY_API_KEY,
   },
   /**
    * Run `build` or `dev` with `SKIP_ENV_VALIDATION` to skip env validation. This is especially

@@ -1,41 +1,38 @@
-import { ChatOpenAI } from "@langchain/openai";
-import { PostgresSaver } from "@langchain/langgraph-checkpoint-postgres";
-import { createReactAgent } from "@langchain/langgraph/prebuilt";
-import { conn } from "@/server/db";
-import { TavilySearchResults } from "@langchain/community/tools/tavily_search";
-import type { RunnableConfig } from "@langchain/core/runnables";
-import { Sandbox } from '@e2b/code-interpreter'
-import type { Document } from '@langchain/core/documents';
-import { tool } from "@langchain/core/tools";
+import {
+  StateGraph,
+  END,
+  START
+} from "@langchain/langgraph";
+import { AgentState } from "./state";
+import { callReActAgent } from "./re-act";
+import { workflow as planWorkflow } from "./plan";
 
-const checkpointer = new PostgresSaver(conn);
-
-type AgentProps = {
-  model: string;
-  files: Document[];
-  config: RunnableConfig;
-};
-
-export async function createAgent(props: AgentProps) {
-  let sbx: Sandbox;
-  
-  if (!props.config.configurable?.sbx_id) {
-    sbx = await Sandbox.create();
-    props.config.configurable = {
-      ...props.config.configurable,
-      sbx_id: sbx.sandboxId,
-    };
-  } else {
-    sbx = await Sandbox.connect(props.config.configurable.sbx_id);
-  }
-
-  const graph = createReactAgent({
-    tools: [new TavilySearchResults()],
-    llm: new ChatOpenAI({
-      model: props.model,
-    }),
-    checkpointSaver: checkpointer,
-  });
-
-  return graph;
+const routeInitialNode = async (state: typeof AgentState.State) => {
+  return state.useManus ? "planExecuteAgent" : "reactAgent";
 }
+
+const workflow = new StateGraph(AgentState)
+  .addNode("router", routeInitialNode)
+  .addNode("reactAgent", callReActAgent)
+  .addNode("planExecuteAgent", planWorkflow.compile())
+
+  .addEdge(START, "router")
+
+  .addEdge("router", "reactAgent")
+  .addEdge("reactAgent", END)
+
+  .addEdge("router", "planExecuteAgent")
+  .addEdge("planExecuteAgent", END)
+
+export const agent = workflow.compile();
+
+const drawableGraph = agent.getGraph();
+const image: Blob = await drawableGraph.drawMermaidPng();
+
+const fs = require('fs');
+const path = require('path');
+
+const outputPath = path.join(__dirname, 'workflow.png');
+fs.writeFileSync(outputPath, Buffer.from(await image.arrayBuffer()));
+
+console.log(`Workflow graph saved to ${outputPath}`);
