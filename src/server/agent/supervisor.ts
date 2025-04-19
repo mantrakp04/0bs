@@ -67,7 +67,7 @@ const workers = ["browser_worker", "shell_worker", "vectorstore_worker", "fs_wor
 
 export const workflow = new StateGraph(SupervisorState)
   .addNode("supervisor", callSupervisor, {
-    ends: ["browser_worker", "shell_worker", "vectorstore_worker", "fs_worker", "ask_user", END]
+    ends: [...workers, END]
   })
   .addNode("browser_worker", callBrowserWorker)
   .addNode("shell_worker", callShellWorker)
@@ -75,10 +75,13 @@ export const workflow = new StateGraph(SupervisorState)
   .addNode("fs_worker", callFsWorkflow, {
     ends: ["supervisor"]
   })
-  .addNode("ask_user", callAskUserModel);
-  workers.forEach(worker => {
-    workflow.addEdge(worker, "supervisor");
-  });
-  workflow.addEdge(START, "supervisor")
+  .addNode("ask_user", callAskUserModel)
+  .addEdge("browser_worker", "supervisor")
+  .addEdge("shell_worker", "supervisor")
+  .addEdge("vectorstore_worker", "supervisor")
+  .addEdge("fs_worker", "supervisor")
+  .addEdge("ask_user", "supervisor")
+  .addConditionalEdges("supervisor", (x: typeof SupervisorState.State) => x.next)
+  .addEdge(START, "supervisor")
 
 export const compiledWorkflow = workflow.compile();
