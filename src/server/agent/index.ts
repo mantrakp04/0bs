@@ -25,14 +25,3 @@ const workflow = new StateGraph(IndexState)
   .addEdge("planAndExecuteAgent", END)
 
 export const agent = workflow.compile();
-
-const drawableGraph = agent.getGraph();
-const image: Blob = await drawableGraph.drawMermaidPng();
-
-const fs = require('fs');
-const path = require('path');
-
-const outputPath = path.join(__dirname, 'workflow.png');
-fs.writeFileSync(outputPath, Buffer.from(await image.arrayBuffer()));
-
-console.log(`Workflow graph saved to ${outputPath}`);
