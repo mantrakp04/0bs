@@ -4,6 +4,12 @@ A powerful MCP server project that provides shell execution, file management, br
 
 ## Components
 
+## Run
+
+```bash
+uv run zerobs
+```
+
 ### Resources
 
 The server implements a simple note storage system with:
@@ -62,88 +68,3 @@ The server uses the following default configuration:
 - Base Data Directory: /tmp/mcp/data
 - Next Data Directory: /tmp/mcp/next
 - Notebook Path: /tmp/mcp/data/notebook.ipynb
-
-To start Jupyter Lab:
-```bash
-jupyter lab --port 8888 --IdentityProvider.token zerobs --ip 0.0.0.0
-```
-
-## Quickstart
-
-### Install
-
-#### Claude Desktop
-
-On MacOS: `~/Library/Application\ Support/Claude/claude_desktop_config.json`
-On Windows: `%APPDATA%/Claude/claude_desktop_config.json`
-
-<details>
-  <summary>Development/Unpublished Servers Configuration</summary>
-  ```
-  "mcpServers": {
-    "zerobs": {
-      "command": "uv",
-      "args": [
-        "--directory",
-        "/home/barrel/0bs/zerobs",
-        "run",
-        "zerobs"
-      ]
-    }
-  }
-  ```
-</details>
-
-<details>
-  <summary>Published Servers Configuration</summary>
-  ```
-  "mcpServers": {
-    "zerobs": {
-      "command": "uvx",
-      "args": [
-        "zerobs"
-      ]
-    }
-  }
-  ```
-</details>
-
-## Development
-
-### Building and Publishing
-
-To prepare the package for distribution:
-
-1. Sync dependencies and update lockfile:
-```bash
-uv sync
-```
-
-2. Build package distributions:
-```bash
-uv build
-```
-
-This will create source and wheel distributions in the `dist/` directory.
-
-3. Publish to PyPI:
-```bash
-uv publish
-```
-
-Note: You'll need to set PyPI credentials via environment variables or command flags:
-- Token: `--token` or `UV_PUBLISH_TOKEN`
-- Or username/password: `--username`/`UV_PUBLISH_USERNAME` and `--password`/`UV_PUBLISH_PASSWORD`
-
-### Debugging
-
-Since MCP servers run over stdio, debugging can be challenging. For the best debugging
-experience, we strongly recommend using the [MCP Inspector](https://github.com/modelcontextprotocol/inspector).
-
-You can launch the MCP Inspector via [`npm`](https://docs.npmjs.com/downloading-and-installing-node-js-and-npm) with this command:
-
-```bash
-npx @modelcontextprotocol/inspector uv --directory /home/barrel/0bs/zerobs run zerobs
-```
-
-Upon launching, the Inspector will display a URL that you can access in your browser to begin debugging.
