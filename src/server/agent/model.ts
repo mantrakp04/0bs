@@ -11,9 +11,10 @@ export const embeddings = new GoogleGenerativeAIEmbeddings({
 });
 
 export const model = new ChatOpenAI({
-  model: "primary",
+  model: "google/gemini-2.5-flash-preview",
   temperature: 0.3,
+  apiKey: env.OPENROUTER_API_KEY || "dummy-key",
   configuration: {
-    baseURL: "http://localhost:4000"
+    baseURL: "https://openrouter.ai/api/v1"
   }
 })
