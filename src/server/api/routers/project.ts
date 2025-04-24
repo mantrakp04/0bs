@@ -3,8 +3,10 @@ import { createTRPCRouter, protectedProcedure } from "@/server/api/trpc";
 import { projects } from "@/server/db/schema";
 import { eq } from "drizzle-orm";
 import { TRPCError } from "@trpc/server";
+import { projectSourceRouter } from "@/server/api/routers/projectSource";
 
 export const projectRouter = createTRPCRouter({
+  source: projectSourceRouter,
   // Create a new project
   create: protectedProcedure
     .input(z.object({

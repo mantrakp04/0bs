@@ -25,125 +25,7 @@ export const vectorstore = new CloudflareVectorizeStore(embeddings, {
   index: env.NODE_ENV,
 });
 
-export async function convertS3KeysToDocuments(keys: string[], skipTypes: string[], ctx: { db: typeof db }): Promise<LangchainDocument[]> {
-  try {
-    type PresignedUrlInfo = {
-      url: string;
-      key: string;
-      mimeType: string | null;
-    };
-
-    // Generate presigned URLs in parallel
-    const presignedUrls = await Promise.all(keys.map(async (key): Promise<PresignedUrlInfo> => {
-      const command = new GetObjectCommand({
-        Bucket: env.S3_BUCKET_NAME,
-        Key: key,
-      });
-      return {
-        url: await getSignedUrl(s3Client, command, {
-          expiresIn: 60 * 60 * 24 * 30, // 30 days
-        }),
-        key,
-        mimeType: mime.getType(key)
-      };
-    }));
-
-    // Fetch all sources in a single query
-    const sourceInfos = await ctx.db.query.sources.findMany({
-      // No need to verify if the source belongs to the user because the keys are uuids
-      where: (sources, { inArray }) => inArray(sources.key, keys),
-    });
-
-    // Create a map for efficient lookup
-    const sourceMap = new Map(
-      sourceInfos.map(source => [source.key, source])
-    );
-
-    // Process documents in parallel to improve performance
-    const documentPromises = presignedUrls.map(async (presignedUrlInfo) => {
-      if (!presignedUrlInfo) return null;
-
-      const { url, key, mimeType } = presignedUrlInfo;
-      const sourceInfo = sourceMap.get(key);
-      
-      if (!sourceInfo) {
-        throw new TRPCError({
-          code: 'NOT_FOUND',
-          message: `Source info not found for key: ${key}`
-        });
-      }
-
-      // If mime type is in skipTypes, return document with empty content
-      if (mimeType && skipTypes.includes(mimeType)) {
-        return {
-          pageContent: "",
-          metadata: {
-            ...sourceInfo,
-            source: sourceInfo.name ?? "",
-            json_content: null,
-            presignedUrl: url
-          }
-        };
-      }
-
-      // Process non-skipped types
-      const body = {
-        "options": {
-          "from_formats": [
-            "docx", "pptx", "html", "image", "pdf", "asciidoc", 
-            "md", "csv", "xlsx", "xml_uspto", "xml_jats", "json_docling"
-          ],
-          "to_formats": ["md"],
-          "image_export_mode": "referenced",
-          "do_ocr": true,
-          "force_ocr": false,
-          "ocr_engine": "easyocr",
-          "pdf_backend": "dlparse_v4",
-          "table_mode": "fast",
-          "abort_on_error": false,
-          "return_as_file": false,
-          "do_table_structure": true,
-          "include_images": true,
-          "images_scale": 2,
-          "do_code_enrichment": false,
-          "do_formula_enrichment": false,
-          "do_picture_classification": false,
-          "do_picture_description": false
-        },
-        "file_sources": {
-          "base64_string": url,
-          "filename": sourceInfo.name
-        }
-      };
-
-      const response = await fetch(env.DOCLING_URL, {
-        method: "POST",
-        body: JSON.stringify(body),
-      });
-      const data = await response.json();
-
-      return {
-        pageContent: data.md_content,
-        metadata: {
-          ...sourceInfo,
-          source: sourceInfo.name ?? "",
-          json_content: data.json_content,
-          presignedUrl: url
-        }
-      };
-    });
-
-    // Wait for all document processing to complete
-    const documents = (await Promise.all(documentPromises)).filter(Boolean) as LangchainDocument[];
-
-    return documents;
-  } catch (error) {
-    console.error('Error converting S3 keys to documents:', error);
-    throw error;
-  }
-}
-
-export const sourceRouter = createTRPCRouter({
+export const projectSourceRouter = createTRPCRouter({
   // Create new sources from Langchain documents
   create: protectedProcedure
     .input(z.object({
@@ -359,3 +241,121 @@ export const sourceRouter = createTRPCRouter({
       return { success: true };
     }),
 });
+
+export async function convertS3KeysToDocuments(keys: string[], skipTypes: string[], ctx: { db: typeof db }): Promise<LangchainDocument[]> {
+  try {
+    type PresignedUrlInfo = {
+      url: string;
+      key: string;
+      mimeType: string | null;
+    };
+
+    // Generate presigned URLs in parallel
+    const presignedUrls = await Promise.all(keys.map(async (key): Promise<PresignedUrlInfo> => {
+      const command = new GetObjectCommand({
+        Bucket: env.S3_BUCKET_NAME,
+        Key: key,
+      });
+      return {
+        url: await getSignedUrl(s3Client, command, {
+          expiresIn: 60 * 60 * 24 * 30, // 30 days
+        }),
+        key,
+        mimeType: mime.getType(key)
+      };
+    }));
+
+    // Fetch all sources in a single query
+    const sourceInfos = await ctx.db.query.sources.findMany({
+      // No need to verify if the source belongs to the user because the keys are uuids
+      where: (sources, { inArray }) => inArray(sources.key, keys),
+    });
+
+    // Create a map for efficient lookup
+    const sourceMap = new Map(
+      sourceInfos.map(source => [source.key, source])
+    );
+
+    // Process documents in parallel to improve performance
+    const documentPromises = presignedUrls.map(async (presignedUrlInfo) => {
+      if (!presignedUrlInfo) return null;
+
+      const { url, key, mimeType } = presignedUrlInfo;
+      const sourceInfo = sourceMap.get(key);
+      
+      if (!sourceInfo) {
+        throw new TRPCError({
+          code: 'NOT_FOUND',
+          message: `Source info not found for key: ${key}`
+        });
+      }
+
+      // If mime type is in skipTypes, return document with empty content
+      if (mimeType && skipTypes.includes(mimeType)) {
+        return {
+          pageContent: "",
+          metadata: {
+            ...sourceInfo,
+            source: sourceInfo.name ?? "",
+            json_content: null,
+            presignedUrl: url
+          }
+        };
+      }
+
+      // Process non-skipped types
+      const body = {
+        "options": {
+          "from_formats": [
+            "docx", "pptx", "html", "image", "pdf", "asciidoc", 
+            "md", "csv", "xlsx", "xml_uspto", "xml_jats", "json_docling"
+          ],
+          "to_formats": ["md"],
+          "image_export_mode": "referenced",
+          "do_ocr": true,
+          "force_ocr": false,
+          "ocr_engine": "easyocr",
+          "pdf_backend": "dlparse_v4",
+          "table_mode": "fast",
+          "abort_on_error": false,
+          "return_as_file": false,
+          "do_table_structure": true,
+          "include_images": true,
+          "images_scale": 2,
+          "do_code_enrichment": false,
+          "do_formula_enrichment": false,
+          "do_picture_classification": false,
+          "do_picture_description": false
+        },
+        "file_sources": {
+          "base64_string": url,
+          "filename": sourceInfo.name
+        }
+      };
+
+      const response = await fetch(env.DOCLING_URL, {
+        method: "POST",
+        body: JSON.stringify(body),
+      });
+      const data = await response.json();
+
+      return {
+        pageContent: data.md_content,
+        metadata: {
+          ...sourceInfo,
+          source: sourceInfo.name ?? "",
+          json_content: data.json_content,
+          presignedUrl: url
+        }
+      };
+    });
+
+    // Wait for all document processing to complete
+    const documents = (await Promise.all(documentPromises)).filter(Boolean) as LangchainDocument[];
+
+    return documents;
+  } catch (error) {
+    console.error('Error converting S3 keys to documents:', error);
+    throw error;
+  }
+}
