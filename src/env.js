@@ -27,7 +27,10 @@ export const env = createEnv({
     OPENAI_BASE_URL: z.string().default("https://openrouter.ai/api/v1"),
     OPENAI_API_KEY: z.string(),
     PRIMARY_MODEL: z.string().default("google/gemini-2.5-flash-preview"),
-    DEFAULT_MODEL_TEMPERATURE: z.number().default(0.3),
+    DEFAULT_MODEL_TEMPERATURE: z.preprocess(
+      (val) => (typeof val === "string" ? parseFloat(val) : val),
+      z.number().default(0.3)
+    ),
     TAVILY_API_KEY: z.string(),
   },
 
