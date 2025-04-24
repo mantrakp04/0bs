@@ -1,0 +1,23 @@
+[project]
+name = "zerobs"
+version = "0.1.0"
+description = "A MCP server project"
+readme = "README.md"
+requires-python = ">=3.12"
+dependencies = [
+ "browser-use>=0.1.41",
+ "docling-serve>=0.7.0",
+ "jupyter-kernel-client>=0.6.0",
+ "jupyter-nbmodel-client>=0.11.2",
+ "mcp>=1.6.0",
+]
+[[project.authors]]
+name = "BarrelOfLube"
+email = "mantrakp04@gmail.com"
+
+[build-system]
+requires = [ "hatchling",]
+build-backend = "hatchling.build"
+
+[project.scripts]
+zerobs = "zerobs:main"
