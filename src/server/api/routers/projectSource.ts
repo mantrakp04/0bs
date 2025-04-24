@@ -18,7 +18,7 @@ import { RecursiveCharacterTextSplitter } from "langchain/text_splitter";
 
 export const embeddings = new GoogleGenerativeAIEmbeddings({
   model: "models/text-embedding-004",
-  apiKey: env.GEMINI_API_KEY,
+  apiKey: env.GOOGLE_GENAI_API_KEY,
 });
 
 export const vectorstore = new CloudflareVectorizeStore(embeddings, {

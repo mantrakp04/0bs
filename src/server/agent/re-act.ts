@@ -4,11 +4,12 @@ import { type AgentState } from "./state";
 import { model } from "./model";
 import { createReactAgent } from "@langchain/langgraph/prebuilt";
 import { getTools } from "./workers/tools";
+import { env } from "@/env";
 
 const search_tool = new TavilySearch({
   maxResults: 5,
   topic: "general",
-  tavilyApiKey: process.env.TAVILY_API_KEY,
+  tavilyApiKey: env.TAVILY_API_KEY,
 });
 
 export const callReActAgent = async (state: typeof AgentState.State, config: RunnableConfig) => {

@@ -1,12 +1,10 @@
 import { type RunnableConfig } from "@langchain/core/runnables";
-import { StdioClientTransport } from "@modelcontextprotocol/sdk/client/stdio.js"
+import { SSEClientTransport } from "@modelcontextprotocol/sdk/client/sse.js"
 import { loadMcpTools } from "@langchain/mcp-adapters"
 import { Client } from "@modelcontextprotocol/sdk/client/index.js"
+import { env } from "@/env"
 
-const transport = new StdioClientTransport({
-  command: "uv",
-  args: ["run", "--project", "zerobs", "zerobs"],
-})
+const transport = new SSEClientTransport(new URL(env.ZERO_MCP_URL))
 const client = new Client({
   name: "zerobs",
   version: "0.0.1",
