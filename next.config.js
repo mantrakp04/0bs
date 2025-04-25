@@ -7,7 +7,7 @@ import "./src/env.js";
 /** @type {import("next").NextConfig} */
 const config = {
   images: {
-    domains: ["img.clerk.com"],
+    remotePatterns: [{ hostname: "img.clerk.com" }],
   },
 };
 
