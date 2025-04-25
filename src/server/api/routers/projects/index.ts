@@ -1,10 +1,7 @@
 import { z } from "zod";
 import { eq, and, desc } from "drizzle-orm";
 import { TRPCError } from "@trpc/server";
-import {
-  createTRPCRouter,
-  protectedProcedure,
-} from "@/server/api/trpc";
+import { createTRPCRouter, protectedProcedure } from "@/server/api/trpc";
 import { db } from "@/server/db";
 import { projects } from "@/server/db/schema";
 import { sourcesRouter } from "@/server/api/routers/projects/sources";
@@ -16,15 +13,17 @@ const projectInput = z.object({
 
 export const projectsRouter = createTRPCRouter({
   sources: sourcesRouter,
-  
+
   getProjects: protectedProcedure
-    .input(z.object({
-      limit: z.number().min(1).max(50).default(3),
-      offset: z.number().min(0).default(0),
-    }))
+    .input(
+      z.object({
+        limit: z.number().min(1).max(50).default(3),
+        offset: z.number().min(0).default(0),
+      }),
+    )
     .query(async ({ ctx, input }) => {
       const userProjects = await db.query.projects.findMany({
-        where: eq(projects.createdById, ctx.session.user.id),
+        where: eq(projects.createdById, ctx.userId),
         limit: input.limit,
         offset: input.offset,
         orderBy: desc(projects.createdAt),
@@ -36,7 +35,10 @@ export const projectsRouter = createTRPCRouter({
     .input(z.object({ id: z.number() }))
     .query(async ({ ctx, input }) => {
       const project = await db.query.projects.findFirst({
-        where: and(eq(projects.id, input.id), eq(projects.createdById, ctx.session.user.id)),
+        where: and(
+          eq(projects.id, input.id),
+          eq(projects.createdById, ctx.userId),
+        ),
         with: {
           sources: true,
         },
@@ -55,20 +57,23 @@ export const projectsRouter = createTRPCRouter({
   createProject: protectedProcedure
     .input(projectInput)
     .mutation(async ({ ctx, input }) => {
-      const [project] = await ctx.db.insert(projects)
+      const [project] = await ctx.db
+        .insert(projects)
         .values({
           ...input,
-          createdById: ctx.session.user.id,
+          createdById: ctx.userId,
         })
         .returning();
       return project;
     }),
 
   updateProject: protectedProcedure
-    .input(z.object({
-      id: z.number(),
-      data: projectInput,
-    }))
+    .input(
+      z.object({
+        id: z.number(),
+        data: projectInput,
+      }),
+    )
     .mutation(async ({ ctx, input }) => {
       const [project] = await ctx.db
         .update(projects)
@@ -76,7 +81,9 @@ export const projectsRouter = createTRPCRouter({
           ...input.data,
           updatedAt: new Date(),
         })
-        .where(and(eq(projects.id, input.id), eq(projects.createdById, ctx.session.user.id)))
+        .where(
+          and(eq(projects.id, input.id), eq(projects.createdById, ctx.userId)),
+        )
         .returning();
 
       if (!project) {
@@ -94,7 +101,9 @@ export const projectsRouter = createTRPCRouter({
     .mutation(async ({ ctx, input }) => {
       const [project] = await ctx.db
         .delete(projects)
-        .where(and(eq(projects.id, input.id), eq(projects.createdById, ctx.session.user.id)))
+        .where(
+          and(eq(projects.id, input.id), eq(projects.createdById, ctx.userId)),
+        )
         .returning();
 
       if (!project) {

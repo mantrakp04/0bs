@@ -1,12 +1,12 @@
 import "@/styles/globals.css";
 
 import { type Metadata } from "next";
-import { Manrope } from "next/font/google"; // Changed to Manrope
-import { SessionProvider } from "next-auth/react";
+import { Manrope } from "next/font/google";
+import { ClerkProvider } from "@clerk/nextjs";
 
 import { ThemeProvider } from "@/components/theme-provider";
 import { TRPCReactProvider } from "@/trpc/react";
-import { SidebarProvider } from "@/components/ui/sidebar"
+import { SidebarProvider } from "@/components/ui/sidebar";
 import { AppSidebar } from "@/components/app-sidebar";
 
 export const metadata: Metadata = {
@@ -15,7 +15,8 @@ export const metadata: Metadata = {
   icons: [{ rel: "icon", url: "/logo.svg" }],
 };
 
-const manrope = Manrope({ // Changed to Manrope
+const manrope = Manrope({
+  // Changed to Manrope
   subsets: ["latin"],
   variable: "--font-manrope", // Updated variable name
 });
@@ -26,7 +27,7 @@ export default function RootLayout({
   return (
     <html lang="en" className={`${manrope.variable}`} suppressHydrationWarning>
       <body>
-        <SessionProvider>
+        <ClerkProvider>
           <SidebarProvider>
             <ThemeProvider
               attribute="class"
@@ -40,7 +41,7 @@ export default function RootLayout({
               </TRPCReactProvider>
             </ThemeProvider>
           </SidebarProvider>
-        </SessionProvider>
+        </ClerkProvider>
       </body>
     </html>
   );
