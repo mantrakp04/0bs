@@ -7,9 +7,9 @@ import {
   SignInButton,
   SignUpButton,
   SignedIn,
-  SignedOut,
-  UserButton,
+  SignedOut
 } from '@clerk/nextjs'
+import CustomSignUp from "@/app/signup/[[...sign-up]]/page";
 
 import { ThemeProvider } from "@/components/theme-provider";
 import { TRPCReactProvider } from "@/trpc/react";
@@ -58,6 +58,7 @@ export default function RootLayout({
           <SignedOut>
             <SignInButton />
             <SignUpButton />
+            <CustomSignUp />
           </SignedOut>
         </ClerkProvider>
       </body>
