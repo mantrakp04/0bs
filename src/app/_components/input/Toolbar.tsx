@@ -1,6 +1,6 @@
 import { Button } from "@/components/ui/button";
 import { Toggle } from "@/components/ui/toggle";
-import { BotIcon, FolderKanbanIcon, Settings2Icon, ArrowUpIcon } from "lucide-react";
+import { BotIcon, Settings2Icon, ArrowUpIcon } from "lucide-react";
 import { AddButton } from "./AddButton";
 import { ModelSelector } from "./ModelSelector";
 import { usePanelStore } from "@/store/panelStore";
