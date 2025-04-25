@@ -9,7 +9,7 @@ import { TRPCReactProvider } from "@/trpc/react";
 import { SidebarProvider } from "@/components/ui/sidebar";
 import { AppSidebar } from "@/components/app-sidebar";
 import CustomSignUp from "./signup/[[...sign-up]]/page";
-
+import { TopNav, TopNavLeft, TopNavRight } from "@/components/topnav";
 export const metadata: Metadata = {
   title: "0bs-chat",
   description: "No bs",
@@ -41,6 +41,7 @@ export default function RootLayout({
                 enableSystem
                 disableTransitionOnChange
               >
+                <TopNav />
                 <TRPCReactProvider>
                   <AppSidebar />
                   {children}

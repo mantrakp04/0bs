@@ -14,6 +14,8 @@ import { Sources } from "./Sources";
 import { Settings } from "./Settings";
 import type { ComponentProps } from "react";
 import type { TabValue } from "@/store/panelStore";
+import { XIcon } from "lucide-react";
+import { Button } from "@/components/ui/button";
 
 interface ResizablePanelsProps
   extends Partial<ComponentProps<typeof ResizablePanel>> {
@@ -27,7 +29,7 @@ export function ResizablePanels({
   const isPanelVisible = usePanelStore((state) => state.isPanelVisible);
   const activeTab = usePanelStore((state) => state.activeTab);
   const setActiveTab = usePanelStore((state) => state.setActiveTab);
-
+  const togglePanel = usePanelStore((state) => state.togglePanel);
   return (
     <ResizablePanelGroup direction="horizontal" className="h-screen">
       <ResizablePanel
@@ -45,9 +47,10 @@ export function ResizablePanels({
             withHandle
             className="transition-opacity duration-300 ease-in-out"
           />
+
           <ResizablePanel
             minSize={15}
-            maxSize={50}
+            maxSize={40}
             className="p-2 transition-all duration-300 ease-in-out"
           >
             <Tabs
@@ -55,11 +58,16 @@ export function ResizablePanels({
               onValueChange={(value) => setActiveTab(value as TabValue)}
               className="h-full"
             >
-              <TabsList className="w-full rounded-md">
-                <TabsTrigger value="artifacts">Artifacts</TabsTrigger>
-                <TabsTrigger value="sources">Sources</TabsTrigger>
-                <TabsTrigger value="settings">Settings</TabsTrigger>
-              </TabsList>
+              <div className="flex flex-row justify-between">
+                <Button variant="ghost" size="icon" onClick={togglePanel}>
+                  <XIcon />
+                </Button>
+                <TabsList className="w-full rounded-md">
+                  <TabsTrigger value="artifacts">Artifacts</TabsTrigger>
+                  <TabsTrigger value="sources">Sources</TabsTrigger>
+                  <TabsTrigger value="settings">Settings</TabsTrigger>
+                </TabsList>
+              </div>
               <TabsContent value="artifacts">
                 <Artifacts />
               </TabsContent>

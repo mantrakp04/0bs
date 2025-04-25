@@ -2,7 +2,6 @@ import { auth } from "@clerk/nextjs/server";
 import { api, HydrateClient } from "@/trpc/server";
 import { ResizablePanels } from "./_components/ResizablePanels";
 import { GreetingMessage } from "./_components/GreetingMessage";
-
 export default async function Home() {
   const { userId } = await auth();
 

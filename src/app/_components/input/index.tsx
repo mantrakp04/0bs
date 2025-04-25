@@ -8,13 +8,13 @@ export function ChatInput() {
   const isUploading = useFileUploadStore((state) => state.isUploading);
 
   return (
-    <div className="bg-muted flex w-[calc(50vw-12rem)] flex-col rounded-2xl">
+    <div className="bg-muted flex w-[calc(50vw-8rem)] flex-col rounded-xl p-2 shadow-sm shadow-white/30">
       {(uploadedFiles.length > 0 || isUploading) && <DocumentScrollArea />}
       <AutosizeTextarea
-        className="bg-muted resize-none p-2"
+        className="bg-accent resize-none p-2"
         minHeight={64}
         maxHeight={200}
-        placeholder="Type a message..."
+        placeholder="ask something..."
       />
       <Toolbar />
     </div>

@@ -1,7 +1,8 @@
 "use client";
 
 import { Calendar, Home, Inbox, Search, Settings } from "lucide-react";
-import { SignedIn, UserButton, SignOutButton, useClerk } from "@clerk/nextjs";
+import Image from "next/image";
+import { SignedIn, SignOutButton, useClerk } from "@clerk/nextjs";
 
 import {
   Sidebar,
@@ -10,13 +11,11 @@ import {
   SidebarGroup,
   SidebarGroupContent,
   SidebarGroupLabel,
-  SidebarHeader,
   SidebarMenu,
   SidebarMenuButton,
   SidebarMenuItem,
-  SidebarTrigger,
 } from "@/components/ui/sidebar";
-import { Button } from "./ui/button";
+import { Button } from "react-day-picker";
 
 // Menu items.
 const items = [
@@ -48,16 +47,16 @@ const items = [
 ];
 
 export function AppSidebar() {
-  const { signOut } = useClerk();
+  const { signOut, user } = useClerk();
 
   return (
-    <Sidebar collapsible="icon">
+    <Sidebar collapsible="offcanvas">
       <SidebarContent>
-        <SidebarHeader className="flex flex-row items-center gap-1">
+        {/* <SidebarHeader className="flex flex-row items-center gap-1">
           <SidebarTrigger />
-        </SidebarHeader>
-        <SidebarGroup className="h-full">
-          <SidebarGroupLabel>Application</SidebarGroupLabel>
+        </SidebarHeader> */}
+        <SidebarGroup className="h-full pt-8">
+          <SidebarGroupLabel className="flex items-center gap-2 py-2 text-2xl"></SidebarGroupLabel>
           <SidebarGroupContent>
             <SidebarMenu>
               {items.map((item) => (
@@ -75,11 +74,20 @@ export function AppSidebar() {
         </SidebarGroup>
         <SidebarFooter className="flex w-full items-center justify-between">
           <SignedIn>
-            <div className="hover:bg-accent flex w-full flex-row items-center justify-between gap-2 rounded-sm p-2 transition duration-500">
-              <UserButton />
+            <div className="hover:bg-accent flex w-full flex-row items-center justify-between gap-2 rounded-sm transition duration-500">
+              <div className="flex flex-row items-center gap-2 p-2">
+                <Image
+                  src={`${user?.imageUrl}`}
+                  alt="user"
+                  width={32}
+                  height={32}
+                  className="h-8 w-8 rounded-full bg-white/20"
+                />
+                <div className="text-sm font-medium">{user?.firstName}</div>
+              </div>
               <SignOutButton>
                 <div
-                  className="rounded-sm hover:cursor-pointer"
+                  className="rounded-sm pr-2 transition duration-500 hover:cursor-pointer hover:text-red-400"
                   onClick={() => signOut({ redirectUrl: "/sign-up" })}
                 >
                   Sign Out
