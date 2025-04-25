@@ -25,7 +25,7 @@ export function TopNavLeft() {
       variant={state === "collapsed" ? "outline" : "ghost"}
       size="icon"
       onClick={toggleSidebar}
-      className="hover:bg-background/50 pointer-events-auto top-0 left-0"
+      className="hover:bg-foreground/10 dark:hover:bg-foreground/20 pointer-events-auto top-0 left-0 transition duration-500 hover:cursor-pointer"
     >
       <Sidebar
         className="h-5 w-5"
@@ -40,7 +40,7 @@ export function TopNavRight() {
   const { isPanelVisible } = usePanelStore();
 
   return (
-    <div className="pointer-events-auto top-0 right-0">
+    <div className="pointer-events-auto top-0 right-0 transition duration-500 hover:cursor-pointer">
       {!isPanelVisible && <ModeToggle />}
     </div>
   );

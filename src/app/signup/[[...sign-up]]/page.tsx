@@ -31,7 +31,7 @@ function OauthSignIn() {
     <div className="flex h-screen w-screen flex-col items-center justify-center bg-black">
       <div className="w-full max-w-xs">
         <Button
-          className="h-12 w-full shadow-[0_0_36px_rgba(59,130,246,0.9)] transition-shadow duration-500 hover:cursor-pointer hover:shadow-[0_0_8px_rgba(59,130,246,0.6)]"
+          className="h-14 w-full text-lg shadow-[0_0_36px_rgba(59,130,246,0.9)] transition-shadow duration-500 hover:cursor-pointer hover:shadow-[0_0_8px_rgba(59,130,246,0.6)]"
           variant="outline"
           onClick={() => signInWith("oauth_google")}
         >

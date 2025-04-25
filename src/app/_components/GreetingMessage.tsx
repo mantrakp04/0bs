@@ -1,12 +1,13 @@
 "use client";
 
 import { useEffect, useState } from "react";
+import { useUser } from "@clerk/nextjs";
 
 const morningGreetings = ["Good morning!"] as const;
 
 const afternoonGreetings = ["Good afternoon!"] as const;
 
-const eveningGreetings = ["Evening!"] as const;
+const eveningGreetings = ["Good evening!"] as const;
 
 export function GreetingMessage() {
   const [greeting, setGreeting] = useState("");
@@ -34,10 +35,10 @@ export function GreetingMessage() {
 
     return () => clearInterval(interval);
   }, []);
-
+  const { user } = useUser();
   return (
-    <div className="animate-fade-in text-muted-foreground mb-8 text-center text-5xl font-medium">
-      {greeting}
+    <div className="animate-fade-in text-muted-foreground mb-8 text-center text-5xl font-semibold">
+      {greeting} {user?.firstName}
     </div>
   );
 }
