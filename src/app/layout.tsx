@@ -17,12 +17,11 @@ const manrope = Manrope({
   subsets: ["latin"],
   variable: "--font-manrope",
 });
-
 export default function RootLayout({
   children,
 }: Readonly<{ children: React.ReactNode }>) {
   return (
-    <html lang="en" className={`${manrope.variable}`}>
+    <html lang="en" className={`${manrope.variable}`} suppressHydrationWarning>
       <body>
         <SessionProvider>
           <ThemeProvider
