@@ -17,7 +17,7 @@ export const projectRouter = createTRPCRouter({
       const result = await ctx.db.insert(projects).values({
         name: input.name,
         description: input.description,
-        createdById: ctx.session.user.id,
+        createdById: ctx.userId,
       }).returning();
       return result[0];
     }),
@@ -25,7 +25,7 @@ export const projectRouter = createTRPCRouter({
   // Get all projects for the current user
   getAll: protectedProcedure.query(async ({ ctx }) => {
     return await ctx.db.query.projects.findMany({
-      where: (projects, { eq }) => eq(projects.createdById, ctx.session.user.id),
+      where: (projects, { eq }) => eq(projects.createdById, ctx.userId),
       orderBy: (projects, { desc }) => [desc(projects.createdAt)],
       with: {
         createdBy: true,
@@ -40,7 +40,7 @@ export const projectRouter = createTRPCRouter({
       const project = await ctx.db.query.projects.findFirst({
         where: (projects, { eq, and }) => and(
           eq(projects.id, input.id),
-          eq(projects.createdById, ctx.session.user.id)
+          eq(projects.createdById, ctx.userId)
         ),
         with: {
           createdBy: true,
@@ -69,7 +69,7 @@ export const projectRouter = createTRPCRouter({
         });
       }
       
-      if (project.createdById !== ctx.session.user.id) {
+      if (project.createdById !== ctx.userId) {
         throw new TRPCError({
           code: 'FORBIDDEN',
           message: 'You do not have permission to update this project'
@@ -106,7 +106,7 @@ export const projectRouter = createTRPCRouter({
         });
       }
       
-      if (project.createdById !== ctx.session.user.id) {
+      if (project.createdById !== ctx.userId) {
         throw new TRPCError({
           code: 'FORBIDDEN',
           message: 'You do not have permission to delete this project'

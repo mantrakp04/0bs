@@ -15,7 +15,7 @@ export const chatRouter = createTRPCRouter({
       const result = await ctx.db.insert(chats).values({
         name: input.name,
         attachedProjectId: input.attachedProjectId,
-        createdById: ctx.session.user.id,
+        createdById: ctx.userId,
       }).returning();
       return result[0];
     }),
@@ -28,7 +28,7 @@ export const chatRouter = createTRPCRouter({
     .query(async ({ ctx, input }) => {
       return await ctx.db.query.chats.findMany({
         where: (chats, { eq, and }) => {
-          const conditions = [eq(chats.createdById, ctx.session.user.id)];
+          const conditions = [eq(chats.createdById, ctx.userId)];
           if (input?.projectId) {
             conditions.push(eq(chats.attachedProjectId, input.projectId));
           }
@@ -49,7 +49,7 @@ export const chatRouter = createTRPCRouter({
       const chat = await ctx.db.query.chats.findFirst({
         where: (chats, { eq, and }) => and(
           eq(chats.id, input.id),
-          eq(chats.createdById, ctx.session.user.id)
+          eq(chats.createdById, ctx.userId)
         ),
         with: {
           createdBy: true,
@@ -79,7 +79,7 @@ export const chatRouter = createTRPCRouter({
         });
       }
       
-      if (chat.createdById !== ctx.session.user.id) {
+      if (chat.createdById !== ctx.userId) {
         throw new TRPCError({
           code: 'FORBIDDEN',
           message: 'You do not have permission to update this chat'
@@ -100,7 +100,7 @@ export const chatRouter = createTRPCRouter({
           });
         }
         
-        if (project.createdById !== ctx.session.user.id) {
+        if (project.createdById !== ctx.userId) {
           throw new TRPCError({
             code: 'FORBIDDEN',
             message: 'You do not have permission to attach this chat to the specified project'
@@ -138,7 +138,7 @@ export const chatRouter = createTRPCRouter({
         });
       }
       
-      if (chat.createdById !== ctx.session.user.id) {
+      if (chat.createdById !== ctx.userId) {
         throw new TRPCError({
           code: 'FORBIDDEN',
           message: 'You do not have permission to delete this chat'

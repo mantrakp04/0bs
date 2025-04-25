@@ -49,7 +49,7 @@ export const projectSourceRouter = createTRPCRouter({
         });
       }
       
-      if (project.createdById !== ctx.session.user.id) {
+      if (project.createdById !== ctx.userId) {
         throw new TRPCError({
           code: 'FORBIDDEN',
           message: 'You do not have permission to add sources to this project'
@@ -126,7 +126,7 @@ export const projectSourceRouter = createTRPCRouter({
         });
       }
 
-      if (project.createdById !== ctx.session.user.id) {
+      if (project.createdById !== ctx.userId) {
         throw new TRPCError({
           code: 'FORBIDDEN',
           message: 'You do not have permission to view sources for this project'
@@ -161,7 +161,7 @@ export const projectSourceRouter = createTRPCRouter({
         });
       }
 
-      if (project.createdById !== ctx.session.user.id) {
+      if (project.createdById !== ctx.userId) {
         throw new TRPCError({
           code: 'FORBIDDEN',
           message: 'You do not have permission to access this project'
@@ -225,7 +225,7 @@ export const projectSourceRouter = createTRPCRouter({
         });
       }
 
-      if (projectSource.project.createdById !== ctx.session.user.id) {
+      if (projectSource.project.createdById !== ctx.userId) {
         throw new TRPCError({
           code: 'FORBIDDEN',
           message: 'You do not have permission to delete this source'

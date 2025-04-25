@@ -23,7 +23,7 @@ export const agentRouter = createTRPCRouter({
         throw new TRPCError({ code: "NOT_FOUND", message: "Chat not found" });
       }
 
-      if (chat.createdById !== ctx.session.user.id) {
+      if (chat.createdById !== ctx.userId) {
         throw new TRPCError({ code: "FORBIDDEN", message: "You do not have permission to access this chat" });
       }
 
@@ -74,7 +74,7 @@ export const agentRouter = createTRPCRouter({
         throw new TRPCError({ code: "NOT_FOUND", message: "Chat not found" });
       }
 
-      if (chat.createdById !== ctx.session.user.id) {
+      if (chat.createdById !== ctx.userId) {
         throw new TRPCError({ code: "FORBIDDEN", message: "You do not have permission to access this chat" });
       }
 

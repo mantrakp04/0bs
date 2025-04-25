@@ -40,7 +40,7 @@ export const env = createEnv({
    * `NEXT_PUBLIC_`.
    */
   client: {
-    // NEXT_PUBLIC_CLIENTVAR: z.string(),
+    NEXT_PUBLIC_CLERK_PUBLISHABLE_KEY: z.string().min(1),
   },
 
   /**
@@ -65,6 +65,7 @@ export const env = createEnv({
     DEFAULT_MODEL_TEMPERATURE: process.env.DEFAULT_MODEL_TEMPERATURE,
     PRIMARY_MODEL: process.env.PRIMARY_MODEL,
     TAVILY_API_KEY: process.env.TAVILY_API_KEY,
+    NEXT_PUBLIC_CLERK_PUBLISHABLE_KEY: process.env.NEXT_PUBLIC_CLERK_PUBLISHABLE_KEY,
   },
   /**
    * Run `build` or `dev` with `SKIP_ENV_VALIDATION` to skip env validation. This is especially

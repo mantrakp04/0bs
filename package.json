@@ -23,6 +23,7 @@
     "@auth/drizzle-adapter": "^1.7.2",
     "@aws-sdk/client-s3": "^3.787.0",
     "@aws-sdk/s3-request-presigner": "^3.787.0",
+    "@clerk/nextjs": "^6.18.0",
     "@hookform/resolvers": "^5.0.1",
     "@langchain/cloudflare": "^0.1.0",
     "@langchain/community": "^0.3.41",
