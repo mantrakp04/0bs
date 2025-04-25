@@ -1,5 +1,5 @@
 import { NextResponse } from "next/server";
-import { auth } from "@/server/auth";
+import { auth } from "@clerk/nextjs/server";
 import { S3Client, PutObjectCommand } from "@aws-sdk/client-s3";
 import { env } from "@/env";
 import { db } from "@/server/db";
@@ -19,7 +19,7 @@ export async function POST(request: Request) {
   try {
     // Check authentication
     const session = await auth();
-    if (!session?.user) {
+    if (!session?.userId) {
       return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
     }
 
@@ -34,7 +34,7 @@ export async function POST(request: Request) {
     const uploadedSources = await Promise.all(
       files.map(async (file) => {
         // Generate unique key for the file
-        const key = `${session.user.id}/${Date.now()}-${file.name}`;
+        const key = `${session.userId}/${Date.now()}-${file.name}`;
         
         // Get file buffer
         const buffer = Buffer.from(await file.arrayBuffer());
@@ -46,7 +46,7 @@ export async function POST(request: Request) {
           Body: buffer,
           ContentType: file.type,
           Metadata: {
-            userId: session.user.id,
+            userId: session.userId,
           },
         });
 

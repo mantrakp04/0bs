@@ -2,13 +2,19 @@ import "@/styles/globals.css";
 
 import { type Metadata } from "next";
 import { Manrope } from "next/font/google";
-import { ClerkProvider, SignedIn, SignedOut } from "@clerk/nextjs";
+import {
+  ClerkProvider,
+  SignInButton,
+  SignUpButton,
+  SignedIn,
+  SignedOut,
+  UserButton,
+} from '@clerk/nextjs'
 
 import { ThemeProvider } from "@/components/theme-provider";
 import { TRPCReactProvider } from "@/trpc/react";
 import { SidebarProvider } from "@/components/ui/sidebar";
 import { AppSidebar } from "@/components/app-sidebar";
-import CustomSignUp from "./signup/[[...sign-up]]/page";
 import { TopNav } from "@/components/topnav";
 export const metadata: Metadata = {
   title: "0bs-chat",
@@ -50,7 +56,8 @@ export default function RootLayout({
             </SidebarProvider>
           </SignedIn>
           <SignedOut>
-            <CustomSignUp />
+            <SignInButton />
+            <SignUpButton />
           </SignedOut>
         </ClerkProvider>
       </body>
