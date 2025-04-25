@@ -1,7 +1,7 @@
-'use client'
+"use client";
 
-import { Calendar, Home, Inbox, Search, Settings, MenuIcon, PlusIcon, SearchIcon, LogOut, LogIn } from "lucide-react"
-import { signIn, signOut, useSession } from "next-auth/react"
+import { Calendar, Home, Inbox, Search, Settings } from "lucide-react";
+import { SignedIn, UserButton, SignOutButton, useClerk } from "@clerk/nextjs";
 
 import {
   Sidebar,
@@ -15,11 +15,8 @@ import {
   SidebarMenuButton,
   SidebarMenuItem,
   SidebarTrigger,
-  useSidebar,
-} from "@/components/ui/sidebar"
-import { Button } from "@/components/ui/button";
-import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar"
-import Image from "next/image";
+} from "@/components/ui/sidebar";
+import { Button } from "./ui/button";
 
 // Menu items.
 const items = [
@@ -48,21 +45,16 @@ const items = [
     url: "#",
     icon: Settings,
   },
-]
+];
 
 export function AppSidebar() {
-  const sidebar = useSidebar();
-  const { data: session } = useSession();
+  const { signOut } = useClerk();
 
   return (
     <Sidebar collapsible="icon">
       <SidebarContent>
         <SidebarHeader className="flex flex-row items-center gap-1">
           <SidebarTrigger />
-          <div className={`flex flex-row items-center gap-1 ${sidebar.open ? "block" : "hidden"}`}>
-            <Image src="/logo.svg" alt="Logo" width={24} height={24} />
-            <span className="text-lg font-bold">bs</span>
-          </div>
         </SidebarHeader>
         <SidebarGroup className="h-full">
           <SidebarGroupLabel>Application</SidebarGroupLabel>
@@ -81,30 +73,22 @@ export function AppSidebar() {
             </SidebarMenu>
           </SidebarGroupContent>
         </SidebarGroup>
-        <SidebarFooter className="flex flex-row items-center justify-between">
-          {session?.user ? (
-            <SidebarMenuItem className="flex flex-row items-center justify-between w-full">
-              <div className="flex flex-row items-center gap-2">
-                <Avatar>
-                  <AvatarImage src={session?.user?.image || ""} />
-                  <AvatarFallback>
-                    {session?.user?.name?.charAt(0).toUpperCase()}
-                  </AvatarFallback>
-                </Avatar>
-                <span className="text-sm">{session?.user?.name}</span>
-              </div>
-              <button onClick={() => signOut()} className="hover:bg-muted/50 rounded-md p-1">
-                <LogOut className="size-4" />
-              </button>
-            </SidebarMenuItem>
-          ) : (
-            <SidebarMenuButton onClick={() => signIn()}>
-              <LogIn />
-              <span>Sign in</span>
-            </SidebarMenuButton>
-          )}
+        <SidebarFooter className="flex w-full items-center justify-between">
+          <SignedIn>
+            <div className="hover:bg-accent flex w-full flex-row items-center justify-between gap-2 rounded-sm p-2 transition duration-500">
+              <UserButton />
+              <SignOutButton>
+                <div
+                  className="rounded-sm hover:cursor-pointer"
+                  onClick={() => signOut({ redirectUrl: "/sign-up" })}
+                >
+                  Sign Out
+                </div>
+              </SignOutButton>
+            </div>
+          </SignedIn>
         </SidebarFooter>
       </SidebarContent>
     </Sidebar>
-  )
+  );
 }

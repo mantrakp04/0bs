@@ -45,7 +45,10 @@ export const sourcesRouter = createTRPCRouter({
     .input(z.object({ projectId: z.number() }))
     .query(async ({ ctx, input }) => {
       const project = await db.query.projects.findFirst({
-        where: and(eq(projects.id, input.projectId), eq(projects.createdById, ctx.session.user.id)),
+        where: and(
+          eq(projects.id, input.projectId),
+          eq(projects.createdById, ctx.userId),
+        ),
       });
 
       if (!project) {
@@ -66,7 +69,10 @@ export const sourcesRouter = createTRPCRouter({
     .input(z.object({ id: z.number() }))
     .query(async ({ ctx, input }) => {
       const source = await db.query.sources.findFirst({
-        where: and(eq(sources.id, input.id), eq(sources.createdById, ctx.session.user.id)),
+        where: and(
+          eq(sources.id, input.id),
+          eq(sources.createdById, ctx.userId),
+        ),
         with: {
           project: true,
         },
@@ -87,7 +93,10 @@ export const sourcesRouter = createTRPCRouter({
     .mutation(async ({ ctx, input }) => {
       // Verify project ownership
       const project = await db.query.projects.findFirst({
-        where: and(eq(projects.id, input.metadata.projectId!), eq(projects.createdById, ctx.session.user.id)),
+        where: and(
+          eq(projects.id, input.metadata.projectId!),
+          eq(projects.createdById, ctx.userId),
+        ),
       });
 
       if (!project) {
@@ -119,10 +128,11 @@ export const sourcesRouter = createTRPCRouter({
       }
 
       // If successful, then insert into the database
-      const [source] = await ctx.db.insert(sources)
+      const [source] = await ctx.db
+        .insert(sources)
         .values({
-          ...input.metadata as typeof sources.$inferInsert,
-          createdById: ctx.session.user.id,
+          ...(input.metadata as typeof sources.$inferInsert),
+          createdById: ctx.userId,
         })
         .returning();
 
@@ -143,10 +153,7 @@ export const sourcesRouter = createTRPCRouter({
       const [source] = await ctx.db
         .delete(sources)
         .where(
-          and(
-            eq(sources.id, input.id),
-            eq(sources.createdById, ctx.session.user.id)
-          )
+          and(eq(sources.id, input.id), eq(sources.createdById, ctx.userId)),
         )
         .returning();
 
@@ -173,7 +180,7 @@ export const sourcesRouter = createTRPCRouter({
           new DeleteObjectCommand({
             Bucket: env.R2_BUCKET_NAME,
             Key: source.key,
-          })
+          }),
         );
       } catch (error) {
         console.error("Failed to delete file from R2:", error);
