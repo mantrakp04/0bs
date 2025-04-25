@@ -1,29 +1,37 @@
-'use client';
+"use client";
 
-import { ResizableHandle, ResizablePanel, ResizablePanelGroup } from "@/components/ui/resizable";
-import { Messages } from "../messages";
+import {
+  ResizableHandle,
+  ResizablePanel,
+  ResizablePanelGroup,
+} from "@/components/ui/resizable";
+// import { Messages } from "../messages";
 import { ChatInput } from "../input";
 import { usePanelStore } from "@/store/panelStore";
-import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Artifacts } from "./Artifacts";
 import { Sources } from "./Sources";
 import { Settings } from "./Settings";
 import type { ComponentProps } from "react";
 import type { TabValue } from "@/store/panelStore";
 
-interface ResizablePanelsProps extends Partial<ComponentProps<typeof ResizablePanel>> {
+interface ResizablePanelsProps
+  extends Partial<ComponentProps<typeof ResizablePanel>> {
   children: React.ReactNode;
 }
 
-export function ResizablePanels({ children, ...panelProps }: ResizablePanelsProps) {
+export function ResizablePanels({
+  children,
+  ...panelProps
+}: ResizablePanelsProps) {
   const isPanelVisible = usePanelStore((state) => state.isPanelVisible);
   const activeTab = usePanelStore((state) => state.activeTab);
   const setActiveTab = usePanelStore((state) => state.setActiveTab);
 
   return (
     <ResizablePanelGroup direction="horizontal" className="h-screen">
-      <ResizablePanel 
-        defaultSize={50} 
+      <ResizablePanel
+        defaultSize={50}
         className="flex flex-col items-center justify-center gap-1"
         {...panelProps}
       >
@@ -33,14 +41,17 @@ export function ResizablePanels({ children, ...panelProps }: ResizablePanelsProp
 
       {isPanelVisible && (
         <>
-          <ResizableHandle withHandle className="transition-opacity duration-300 ease-in-out" />
-          <ResizablePanel 
+          <ResizableHandle
+            withHandle
+            className="transition-opacity duration-300 ease-in-out"
+          />
+          <ResizablePanel
             minSize={15}
             maxSize={50}
-            className="transition-all duration-300 ease-in-out p-2"
+            className="p-2 transition-all duration-300 ease-in-out"
           >
-            <Tabs 
-              value={activeTab} 
+            <Tabs
+              value={activeTab}
               onValueChange={(value) => setActiveTab(value as TabValue)}
               className="h-full"
             >
