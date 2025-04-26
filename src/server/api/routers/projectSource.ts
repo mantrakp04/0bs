@@ -79,7 +79,7 @@ export const projectSourceRouter = createTRPCRouter({
         }
         
         // Split documents and preserve metadata
-        const splitDocs = await textSplitter.splitDocuments([document]);
+        const splitDocs = await textSplitter.splitDocuments([document]) as LangchainDocument[];
         
         if (splitDocs.length === 0) return; // Skip empty documents
         

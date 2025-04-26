@@ -5,6 +5,7 @@ import { model } from "./model";
 import { createReactAgent } from "@langchain/langgraph/prebuilt";
 import { getTools } from "./workers/tools";
 import { env } from "@/env";
+import { createRetrieverWithFilters } from "./workers/vectorstore";
 
 const search_tool = new TavilySearch({
   maxResults: 5,
@@ -12,7 +13,7 @@ const search_tool = new TavilySearch({
   tavilyApiKey: env.TAVILY_API_KEY,
 });
 
-// TODO: add retriver toolkit, memory
+// TODO: add memory
 
 export const callReActAgent = async (state: typeof AgentState.State, config: RunnableConfig) => {
   const { messages } = state;
@@ -20,7 +21,7 @@ export const callReActAgent = async (state: typeof AgentState.State, config: Run
 
   const agent = createReactAgent({
     llm: model,
-    tools: [search_tool, ...code_interpreter_toolkit],
+    tools: [search_tool, ...code_interpreter_toolkit, ...createRetrieverWithFilters(config)],
     stateModifier: "You are a helpful assistant that provides accurate and concise information." // system prompt here
   });
 

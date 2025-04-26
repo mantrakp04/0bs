@@ -1,4 +1,4 @@
-import { vectorStore } from "@/server/api/routers/projects/sources"
+import { vectorstore } from "@/server/api/routers/projectSource"
 import { createRetrieverTool } from "langchain/tools/retriever";
 import { ToolNode } from "@langchain/langgraph/prebuilt";
 import { VectorstoreState, type SupervisorState } from "../state";
@@ -9,19 +9,34 @@ import * as prompts from "../prompt";
 import type { RunnableConfig } from "@langchain/core/runnables";
 import { HumanMessage } from "@langchain/core/messages";
 
-const retriever = vectorStore.asRetriever();
+export function createRetrieverWithFilters(config: RunnableConfig) {
+  const threadId = config.configurable?.thread_id;
+  const projectId = config.configurable?.attachedProjectId;
 
-const tool = createRetrieverTool(
-  retriever,
-  {
-    name: "vectorstore",
-    description: "Use this tool to search the vector store for relevant information",
+  if (!threadId || !projectId) {
+    throw new Error("Thread ID and Project ID are required for vector store retrieval");
   }
-);
 
-const tools = [tool];
+  const retriever = vectorstore.asRetriever({
+    filter: {
+      thread_id: threadId,
+      project_id: projectId
+    }
+  });
 
-const toolNode = new ToolNode<typeof VectorstoreState.State>(tools);
+  return [createRetrieverTool(
+    retriever,
+    {
+      name: "vectorstore",
+      description: "Use this tool to search the vector store for relevant information",
+    }
+  )];
+}
+
+function createToolNode(config: RunnableConfig) {
+  const tools = createRetrieverWithFilters(config);
+  return new ToolNode<typeof VectorstoreState.State>(tools);
+}
 
 function shouldRetrieve(state: typeof VectorstoreState.State): string {
   const { messages } = state;
@@ -57,6 +72,7 @@ function shouldRewrite(state: typeof VectorstoreState.State) {
 
 async function agent(state: typeof VectorstoreState.State, config: RunnableConfig) {
   const { messages } = state;
+  const toolNode = createToolNode(config);
   const modelWithTools = model.bindTools([toolNode])
   const response = await modelWithTools.invoke(messages, config)
 
@@ -100,7 +116,7 @@ async function generateAnswer(state: typeof VectorstoreState.State, config: Runn
 
 export const workflow = new StateGraph(VectorstoreState)
   .addNode("agent", agent)
-  .addNode("retrieve", toolNode)
+  .addNode("retrieve", createToolNode({}))
   .addNode("gradeDocuments", gradeDocuments)
   .addNode("rewrite", rewrite)
   .addNode("generateAnswer", generateAnswer)
