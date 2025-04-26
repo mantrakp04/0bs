@@ -1,12 +1,15 @@
 import { create } from 'zustand';
-import type { Document } from '@langchain/core/documents';
+import type { sources } from '@/server/db/schema';
 
 interface FileUploadState {
-  uploadedFiles: Document[];
+  uploadedFiles: {
+    source: typeof sources.$inferSelect;
+    url: string;
+  }[];
   isUploading: boolean;
   error: string | null;
   uploadFile: (file: File) => Promise<void>;
-  removeFile: (file: Document) => void;
+  removeFile: (source: typeof sources.$inferSelect) => void;
 }
 
 export const useFileUploadStore = create<FileUploadState>((set) => ({
@@ -18,7 +21,7 @@ export const useFileUploadStore = create<FileUploadState>((set) => ({
       set({ isUploading: true, error: null });
       
       const formData = new FormData();
-      formData.append('file', file);
+      formData.append('files', file);
 
       const response = await fetch('/api/upload', {
         method: 'POST',
@@ -30,10 +33,10 @@ export const useFileUploadStore = create<FileUploadState>((set) => ({
         throw new Error(error.error || 'Failed to upload file');
       }
 
-      const { documents } = await response.json();
+      const { files } = await response.json();
 
       set((state) => ({
-        uploadedFiles: [...state.uploadedFiles, ...documents],
+        uploadedFiles: [...state.uploadedFiles, ...files],
         isUploading: false,
       }));
     } catch (error) {
@@ -41,9 +44,9 @@ export const useFileUploadStore = create<FileUploadState>((set) => ({
       set({ error: error instanceof Error ? error.message : 'Failed to upload file', isUploading: false });
     }
   },
-  removeFile: (file: Document) => {
+  removeFile: (source: typeof sources.$inferSelect) => {
     set((state) => ({
-      uploadedFiles: state.uploadedFiles.filter((doc) => doc !== file)
+      uploadedFiles: state.uploadedFiles.filter((file) => file.source.id !== source.id)
     }));
   },
 }));

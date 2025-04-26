@@ -11,26 +11,6 @@ import { randomUUID } from "crypto";
  */
 export const createTable = sqliteTableCreator((name) => `0bs_${name}`);
 
-export const posts = createTable(
-  "post",
-  (d) => ({
-    id: d.text("id").primaryKey().$defaultFn(() => randomUUID()),
-    name: d.text({ length: 256 }),
-    createdById: d
-      .text({ length: 255 })
-      .notNull(),
-    createdAt: d
-      .integer({ mode: "timestamp" })
-      .default(sql`(unixepoch())`)
-      .notNull(),
-    updatedAt: d.integer({ mode: "timestamp" }).$onUpdate(() => new Date()),
-  }),
-  (t) => [
-    index("created_by_idx").on(t.createdById),
-    index("name_idx").on(t.name),
-  ],
-);
-
 export const sources = createTable("source", (d) => ({
   id: d.text("id").primaryKey().$defaultFn(() => randomUUID()),
   name: d.text({ length: 255 }),

@@ -7,20 +7,15 @@ import { UploadIcon } from "lucide-react";
 import { api } from "@/trpc/react";
 import type { TRPCClientErrorLike } from "@trpc/client";
 import type { AppRouter } from "@/server/api/root";
-import type { LangchainDocument } from "@/lib/types";
+import { toast } from "sonner";
 
 interface SourceUploadAreaProps {
   projectId: string;
   onUploadComplete?: () => void;
 }
 
-interface UploadResponse {
-  documents: LangchainDocument[];
-}
-
 export function SourceUploadArea({ projectId, onUploadComplete }: SourceUploadAreaProps) {
   const [isUploading, setIsUploading] = useState(false);
-  const [error, setError] = useState<string | null>(null);
   const utils = api.useUtils();
   
   // Initialize the createSource mutation
@@ -29,49 +24,47 @@ export function SourceUploadArea({ projectId, onUploadComplete }: SourceUploadAr
       // Invalidate sources query to trigger a refetch
       await utils.project.source.getAll.invalidate({ projectId });
       onUploadComplete?.();
+      toast.success("Files uploaded successfully");
     },
     onError: (error: TRPCClientErrorLike<AppRouter>) => {
-      setError(error.message);
+      toast.error(`Error creating source: ${error.message}`);
     },
   });
 
   const onDrop = useCallback(async (acceptedFiles: File[]) => {
     setIsUploading(true);
-    setError(null);
 
     try {
-      for (const file of acceptedFiles) {
-        const formData = new FormData();
-        formData.append('file', file);
+      const formData = new FormData();
+      acceptedFiles.forEach((file) => {
+        formData.append('files', file);
+      });
 
-        const response = await fetch('/api/upload', {
-          method: 'POST',
-          body: formData,
-        });
+      const response = await fetch('/api/upload', {
+        method: 'POST',
+        body: formData,
+      });
 
-        if (!response.ok) {
-          const error = await response.json();
-          throw new Error(error.error || 'Failed to upload file');
-        }
-
-        const { documents } = await response.json() as UploadResponse;
-        
-        if (!documents?.[0]) {
-          throw new Error('No document data received from upload');
-        }
-
-        const document = documents[0];
-
-        // Create source in the project using the mutation
-        await createSource.mutateAsync({
-          projectId,
-          keys: [document.metadata.source],
-          skipTypes: [],
-        });
+      if (!response.ok) {
+        const error = await response.json();
+        throw new Error(error.error || 'Failed to upload file');
       }
+
+      const { files } = await response.json();
+      
+      if (!files?.length) {
+        throw new Error('No files were uploaded');
+      }
+
+      // Create source in the project using the mutation
+      await createSource.mutateAsync({
+        projectId,
+        keys: files.map((file: { source: { key: string } }) => file.source.key),
+        skipTypes: [], // Add skip types if needed
+      });
     } catch (error) {
       console.error('Upload error:', error);
-      setError(error instanceof Error ? error.message : 'Failed to upload file');
+      toast.error(error instanceof Error ? error.message : 'Failed to upload file');
     } finally {
       setIsUploading(false);
     }
@@ -104,11 +97,6 @@ export function SourceUploadArea({ projectId, onUploadComplete }: SourceUploadAr
           </div>
         </div>
       </div>
-      {(error || createSource.error) && (
-        <div className="text-destructive text-sm mt-2">
-          Error uploading file: {error || createSource.error?.message}
-        </div>
-      )}
     </div>
   );
 }

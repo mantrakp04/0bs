@@ -1,7 +1,7 @@
 import { z } from "zod";
 import { createTRPCRouter, protectedProcedure } from "@/server/api/trpc";
 import { projects } from "@/server/db/schema";
-import { eq, lt, desc } from "drizzle-orm";
+import { eq } from "drizzle-orm";
 import { TRPCError } from "@trpc/server";
 import { projectSourceRouter } from "@/server/api/routers/projectSource";
 
