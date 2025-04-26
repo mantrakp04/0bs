@@ -18,3 +18,5 @@ alwaysApply: true
   - Use React Server Actions for form handling
   - Use URL search params for shareable state
 - Use `nuqs` for URL search param state management
+- Use `bun` to run and install nodejs related packages
+- Use `import { toast } from "sonner"` to display errors

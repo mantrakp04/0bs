@@ -31,13 +31,15 @@ export function AddButton() {
   const fileInputRef = useRef<HTMLInputElement>(null);
   
   // Fetch 3 most recent projects with stale-while-revalidate
-  const { data: recentProjects } = api.projects.getProjects.useQuery(
-    { limit: 3, offset: 0 },
+  const { data: projectData } = api.project.getAll.useQuery(
+    { limit: 3 },
     {
       staleTime: 30 * 1000, // Consider data stale after 30 seconds
       refetchInterval: 30 * 1000, // Refetch every 30 seconds in the background
     }
   );
+
+  const recentProjects = projectData?.items;
 
   const handleFileUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
     const files = e.target.files;

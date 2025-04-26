@@ -9,16 +9,19 @@ import { SourceUploadArea } from "./SourceUploadArea";
 import { format } from "date-fns";
 import { FilePreviewDialog, getFileIcon } from "@/app/_components/shared/FilePreviewDialog";
 import { DialogTrigger } from "@/components/ui/dialog";
+import { type sources, type projectSources } from "@/server/db/schema";
+
+type ProjectSource = typeof projectSources.$inferSelect & { source: typeof sources.$inferSelect };
 
 export function Sources() {
   const selectedProject = useProjectStore((state) => state.selectedProject);
   const setSelectedProject = useProjectStore((state) => state.setSelectedProject);
-  const { data: sources, refetch: refetchSources } = api.projects.sources.getSources.useQuery(
-    { projectId: selectedProject?.id ?? 0 },
+  const { data: sources, refetch: refetchSources } = api.project.source.getAll.useQuery(
+    { projectId: selectedProject?.id ?? "" },
     { enabled: !!selectedProject }
   );
 
-  const deleteSource = api.projects.sources.deleteSource.useMutation({
+  const deleteSource = api.project.source.delete.useMutation({
     onSuccess: () => {
       void refetchSources();
     },
@@ -60,29 +63,29 @@ export function Sources() {
       )}
 
       <SourceUploadArea 
-        projectId={selectedProject.id} 
+        projectId={selectedProject.id}
         onUploadComplete={refetchSources}
       />
 
       <ScrollArea className="h-[calc(100vh-20rem)]">
         {sources && sources.length > 0 ? (
           <div className="space-y-2 p-4">
-            {sources.map((source) => (
+            {sources.map((projectSource: ProjectSource) => (
               <FilePreviewDialog
-                key={source.id}
-                name={source.name}
-                source={source.key}
-                type={source.type}
-                size={source.size}
-                uploadedAt={source.createdAt}
+                key={projectSource.id}
+                name={projectSource.source.name ?? ""}
+                source={projectSource.source.key ?? ""}
+                type={projectSource.source.type ?? ""}
+                size={projectSource.source.size ?? 0}
+                uploadedAt={projectSource.source.createdAt ?? new Date()}
               >
                 <DialogTrigger asChild>
                   <div className="flex items-center justify-between p-2 rounded-lg hover:bg-accent group cursor-pointer">
                     <div className="flex items-center gap-2 min-w-0">
-                      {getFileIcon(source.type)}
-                      <span className="text-sm truncate">{source.name}</span>
+                      {getFileIcon(projectSource.source.type ?? "")}
+                      <span className="text-sm truncate">{projectSource.source.name}</span>
                       <span className="text-xs text-muted-foreground">
-                        {format(new Date(source.createdAt), "MMM d, yyyy")}
+                        {format(projectSource.source.createdAt ?? new Date(), "MMM d, yyyy")}
                       </span>
                     </div>
                     <Button
@@ -91,7 +94,7 @@ export function Sources() {
                       className="h-8 w-8 opacity-0 group-hover:opacity-100 transition-opacity"
                       onClick={(e) => {
                         e.stopPropagation();
-                        deleteSource.mutate({ id: source.id });
+                        deleteSource.mutate({ id: projectSource.id });
                       }}
                     >
                       <Trash2Icon className="h-4 w-4" />

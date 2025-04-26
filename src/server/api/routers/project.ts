@@ -1,7 +1,7 @@
 import { z } from "zod";
 import { createTRPCRouter, protectedProcedure } from "@/server/api/trpc";
 import { projects } from "@/server/db/schema";
-import { eq } from "drizzle-orm";
+import { eq, lt, desc } from "drizzle-orm";
 import { TRPCError } from "@trpc/server";
 import { projectSourceRouter } from "@/server/api/routers/projectSource";
 
@@ -22,20 +22,41 @@ export const projectRouter = createTRPCRouter({
       return result[0];
     }),
 
-  // Get all projects for the current user
-  getAll: protectedProcedure.query(async ({ ctx }) => {
-    return await ctx.db.query.projects.findMany({
-      where: (projects, { eq }) => eq(projects.createdById, ctx.userId),
-      orderBy: (projects, { desc }) => [desc(projects.createdAt)],
-      with: {
-        createdBy: true,
-      },
-    });
-  }),
+  // Get all projects for the current user with pagination
+  getAll: protectedProcedure
+    .input(z.object({
+      limit: z.number().min(1).max(100).nullish(),
+      cursor: z.number().nullish(),
+    }))
+    .query(async ({ ctx, input }) => {
+      const limit = input.limit ?? 10;
+      const cursor = input.cursor;
+
+      const items = await ctx.db.query.projects.findMany({
+        where: (projects, { eq }) => eq(projects.createdById, ctx.userId),
+        orderBy: (projects, { desc }) => [desc(projects.createdAt)],
+        with: {
+          createdBy: true,
+        },
+        limit: limit + 1,
+        ...(cursor ? { offset: cursor } : {}),
+      });
+
+      let nextCursor: typeof cursor | undefined = undefined;
+      if (items.length > limit) {
+        const nextItem = items.pop();
+        nextCursor = cursor ? cursor + limit : limit;
+      }
+
+      return {
+        items,
+        nextCursor,
+      };
+    }),
 
   // Get a single project by ID
   getById: protectedProcedure
-    .input(z.object({ id: z.number() }))
+    .input(z.object({ id: z.string() }))
     .query(async ({ ctx, input }) => {
       const project = await ctx.db.query.projects.findFirst({
         where: (projects, { eq, and }) => and(
@@ -52,7 +73,7 @@ export const projectRouter = createTRPCRouter({
   // Update a project
   update: protectedProcedure
     .input(z.object({
-      id: z.number(),
+      id: z.string(),
       name: z.string().min(1).optional(),
       description: z.string().optional(),
     }))
@@ -92,7 +113,7 @@ export const projectRouter = createTRPCRouter({
 
   // Delete a project
   delete: protectedProcedure
-    .input(z.object({ id: z.number() }))
+    .input(z.object({ id: z.string() }))
     .mutation(async ({ ctx, input }) => {
       // Verify project ownership
       const project = await ctx.db.query.projects.findFirst({

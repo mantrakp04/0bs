@@ -29,6 +29,27 @@ const handler = (req: NextRequest) =>
             );
           }
         : undefined,
+    responseMeta(opts) {
+      const { type, errors } = opts;
+      
+      // Check if it's a successful query request
+      const allOk = errors.length === 0;
+      const isQuery = type === 'query';
+      
+      if (allOk && isQuery) {
+        // Cache successful queries for 1 minute and allow stale responses for up to 1 day
+        const ONE_MINUTE = 60;
+        const ONE_DAY = 60 * 60 * 24;
+        
+        return {
+          headers: new Headers([
+            ['Cache-Control', `s-maxage=${ONE_MINUTE}, stale-while-revalidate=${ONE_DAY}`],
+          ]),
+        };
+      }
+      
+      return {};
+    },
   });
 
 export { handler as GET, handler as POST };

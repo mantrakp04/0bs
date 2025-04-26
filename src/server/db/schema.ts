@@ -1,6 +1,7 @@
 import { relations, sql } from "drizzle-orm";
 import { index, primaryKey, sqliteTableCreator } from "drizzle-orm/sqlite-core";
 import { type AdapterAccount } from "next-auth/adapters";
+import { randomUUID } from "crypto";
 
 /**
  * This is an example of how to use the multi-project schema feature of Drizzle ORM. Use the same
@@ -13,7 +14,7 @@ export const createTable = sqliteTableCreator((name) => `0bs_${name}`);
 export const posts = createTable(
   "post",
   (d) => ({
-    id: d.integer({ mode: "number" }).primaryKey({ autoIncrement: true }),
+    id: d.text("id").primaryKey().$defaultFn(() => randomUUID()),
     name: d.text({ length: 256 }),
     createdById: d
       .text({ length: 255 })
@@ -31,7 +32,7 @@ export const posts = createTable(
 );
 
 export const sources = createTable("source", (d) => ({
-  id: d.integer({ mode: "number" }).primaryKey({ autoIncrement: true }),
+  id: d.text("id").primaryKey().$defaultFn(() => randomUUID()),
   name: d.text({ length: 255 }),
   key: d.text({ length: 255 }),
   type: d.text({ length: 255 }),
@@ -45,10 +46,11 @@ export const sourcesRelations = relations(sources, ({ many }) => ({
 }));
 
 export const chats = createTable("chat", (d) => ({
-  id: d.integer({ mode: "number" }).primaryKey({ autoIncrement: true }),
+  id: d.text("id").primaryKey().$defaultFn(() => randomUUID()),
   createdById: d.text({ length: 255 }).notNull(),
   name: d.text({ length: 255 }),
-  attachedProjectId: d.integer({ mode: "number" }).references(() => projects.id),
+  attachedProjectId: d.text("attachedProjectId").references(() => projects.id),
+  starred: d.integer({ mode: "number" }).default(0),
   createdAt: d.integer({ mode: "timestamp" }).default(sql`(unixepoch())`),
   updatedAt: d.integer({ mode: "timestamp" }).$onUpdate(() => new Date()),
 }));
@@ -58,7 +60,7 @@ export const chatsRelations = relations(chats, ({ one }) => ({
 }));
 
 export const projects = createTable("project", (d) => ({
-  id: d.integer({ mode: "number" }).primaryKey({ autoIncrement: true }),
+  id: d.text("id").primaryKey().$defaultFn(() => randomUUID()),
   createdById: d.text({ length: 255 }).notNull(),
   name: d.text({ length: 255 }),
   description: d.text(),
@@ -67,9 +69,9 @@ export const projects = createTable("project", (d) => ({
 }));
 
 export const projectSources = createTable("project_source", (d) => ({
-  id: d.integer({ mode: "number" }).primaryKey({ autoIncrement: true }),
-  projectId: d.integer({ mode: "number" }).notNull().references(() => projects.id),
-  sourceId: d.integer({ mode: "number" }).notNull().references(() => sources.id),
+  id: d.text("id").primaryKey().$defaultFn(() => randomUUID()),
+  projectId: d.text("projectId").notNull().references(() => projects.id),
+  sourceId: d.text("sourceId").notNull().references(() => sources.id),
 }));
 
 export const projectSourcesRelations = relations(projectSources, ({ one }) => ({
@@ -78,9 +80,9 @@ export const projectSourcesRelations = relations(projectSources, ({ one }) => ({
 }));
 
 export const projectSourceIds = createTable("project_source_ids", (d) => ({
-  id: d.integer({ mode: "number" }).primaryKey({ autoIncrement: true }),
+  id: d.text("id").primaryKey().$defaultFn(() => randomUUID()),
   vectorId: d.text({ length: 255 }).notNull(),
-  projectSourceId: d.integer({ mode: "number" }).notNull().references(() => projectSources.id),
+  projectSourceId: d.text("projectSourceId").notNull().references(() => projectSources.id),
 }));
 
 export const projectSourceIdsRelations = relations(projectSourceIds, ({ one }) => ({

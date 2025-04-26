@@ -47,14 +47,14 @@ export function CreateProjectDialog() {
     },
   });
 
-  const createProject = api.projects.createProject.useMutation({
+  const createProject = api.project.create.useMutation({
     onSuccess: async () => {
       // Close the dialog
       setOpen(false);
       // Reset the form
       form.reset();
       // Invalidate the projects query to trigger a refetch
-      await utils.projects.getProjects.invalidate();
+      await utils.project.getAll.invalidate();
     },
   });
 

@@ -5,11 +5,17 @@ import { useDropzone } from "react-dropzone";
 import { cn } from "@/lib/utils";
 import { UploadIcon } from "lucide-react";
 import { api } from "@/trpc/react";
-import type { ProjectSource } from "@/lib/types";
+import type { TRPCClientErrorLike } from "@trpc/client";
+import type { AppRouter } from "@/server/api/root";
+import type { LangchainDocument } from "@/lib/types";
 
 interface SourceUploadAreaProps {
-  projectId: number;
+  projectId: string;
   onUploadComplete?: () => void;
+}
+
+interface UploadResponse {
+  documents: LangchainDocument[];
 }
 
 export function SourceUploadArea({ projectId, onUploadComplete }: SourceUploadAreaProps) {
@@ -18,13 +24,13 @@ export function SourceUploadArea({ projectId, onUploadComplete }: SourceUploadAr
   const utils = api.useUtils();
   
   // Initialize the createSource mutation
-  const createSource = api.projects.sources.createSource.useMutation({
+  const createSource = api.project.source.create.useMutation({
     onSuccess: async () => {
       // Invalidate sources query to trigger a refetch
-      await utils.projects.sources.getSources.invalidate({ projectId });
+      await utils.project.source.getAll.invalidate({ projectId });
       onUploadComplete?.();
     },
-    onError: (error) => {
+    onError: (error: TRPCClientErrorLike<AppRouter>) => {
       setError(error.message);
     },
   });
@@ -48,25 +54,19 @@ export function SourceUploadArea({ projectId, onUploadComplete }: SourceUploadAr
           throw new Error(error.error || 'Failed to upload file');
         }
 
-        const { documents } = await response.json() as { documents: ProjectSource[] };
+        const { documents } = await response.json() as UploadResponse;
         
         if (!documents?.[0]) {
           throw new Error('No document data received from upload');
         }
 
         const document = documents[0];
-        const metadata = document.metadata ?? {};
 
         // Create source in the project using the mutation
         await createSource.mutateAsync({
-          pageContent: document.pageContent,
-          metadata: {
-            name: metadata.name,
-            key: metadata.source, // The R2 key from the upload response
-            type: metadata.type,
-            size: metadata.size,
-            projectId,
-          },
+          projectId,
+          keys: [document.metadata.source],
+          skipTypes: [],
         });
       }
     } catch (error) {
@@ -75,7 +75,7 @@ export function SourceUploadArea({ projectId, onUploadComplete }: SourceUploadAr
     } finally {
       setIsUploading(false);
     }
-  }, [projectId, createSource, onUploadComplete]);
+  }, [projectId, createSource]);
 
   const { getRootProps, getInputProps, isDragActive } = useDropzone({
     onDrop,
@@ -111,4 +111,4 @@ export function SourceUploadArea({ projectId, onUploadComplete }: SourceUploadAr
       )}
     </div>
   );
-} 
+}

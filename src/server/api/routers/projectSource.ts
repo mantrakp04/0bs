@@ -29,7 +29,7 @@ export const projectSourceRouter = createTRPCRouter({
   // Create new sources from Langchain documents
   create: protectedProcedure
     .input(z.object({
-      projectId: z.number(),
+      projectId: z.string(),
       keys: z.array(z.string()), // from sources table
       skipTypes: z.array(z.string()),
     }))
@@ -74,7 +74,7 @@ export const projectSourceRouter = createTRPCRouter({
       await Promise.all(documents.map(async (document, index) => {
         const projectSourceRecord = projectSource[index];
         
-        if (!document || !projectSourceRecord || typeof projectSourceRecord.id !== 'number') {
+        if (!document || !projectSourceRecord || !projectSourceRecord.id) {
           return; // Skip if we don't have valid records
         }
         
@@ -100,7 +100,7 @@ export const projectSourceRouter = createTRPCRouter({
         
         // Batch insert all vector IDs
         if (allIds.length > 0) {
-          await ctx.db.insert(projectSourceIds).values(allIds as { vectorId: string; projectSourceId: number }[]);
+          await ctx.db.insert(projectSourceIds).values(allIds as { vectorId: string; projectSourceId: string }[]);
         }
       });
 
@@ -111,7 +111,9 @@ export const projectSourceRouter = createTRPCRouter({
   // Get all sources
   getAll: protectedProcedure
     .input(z.object({
-      projectId: z.number()
+      projectId: z.string(),
+      limit: z.number().min(1).max(100).nullish(),
+      cursor: z.number().nullish(),
     }))
     .query(async ({ ctx, input }) => {
       // Verify project ownership
@@ -133,20 +135,36 @@ export const projectSourceRouter = createTRPCRouter({
         });
       }
 
-      return await ctx.db.query.projectSources.findMany({
+      const limit = input.limit ?? 10;
+      const cursor = input.cursor;
+
+      const items = await ctx.db.query.projectSources.findMany({
         where: (projectSources, { eq }) => eq(projectSources.projectId, input.projectId),
         orderBy: (projectSources, { desc }) => [desc(projectSources.id)],
         with: {
           source: true
-        }
+        },
+        limit: limit + 1,
+        ...(cursor ? { offset: cursor } : {}),
       });
+
+      let nextCursor: typeof cursor | undefined = undefined;
+      if (items.length > limit) {
+        const nextItem = items.pop();
+        nextCursor = cursor ? cursor + limit : limit;
+      }
+
+      return {
+        items,
+        nextCursor,
+      };
     }),
 
   // Get a single source by ID
   getById: protectedProcedure
     .input(z.object({ 
-      id: z.number(), // id from sources table
-      projectId: z.number() // project ID for ownership verification
+      id: z.string(), // id from sources table
+      projectId: z.string() // project ID for ownership verification
     }))
     .query(async ({ ctx, input }) => {
       // Verify project ownership
@@ -193,7 +211,7 @@ export const projectSourceRouter = createTRPCRouter({
 
   // Delete a source
   delete: protectedProcedure
-    .input(z.object({ id: z.number() })) // from projectSources table
+    .input(z.object({ id: z.string() })) // from projectSources table
     .mutation(async ({ ctx, input }) => {
       const source = await ctx.db.query.projectSourceIds.findMany({
         where: (projectSourceIds, { eq }) => eq(projectSourceIds.projectSourceId, input.id),

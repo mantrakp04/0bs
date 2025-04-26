@@ -10,7 +10,7 @@ import {
   SignedOut
 } from '@clerk/nextjs'
 import CustomSignUp from "@/app/signup/[[...sign-up]]/page";
-
+import { Toaster } from "@/components/ui/sonner"
 import { ThemeProvider } from "@/components/theme-provider";
 import { TRPCReactProvider } from "@/trpc/react";
 import { SidebarProvider } from "@/components/ui/sidebar";
@@ -61,6 +61,7 @@ export default function RootLayout({
             <CustomSignUp />
           </SignedOut>
         </ClerkProvider>
+        <Toaster />
       </body>
     </html>
   );

@@ -9,7 +9,7 @@ export const chatRouter = createTRPCRouter({
   create: protectedProcedure
     .input(z.object({
       name: z.string().min(1).optional(),
-      attachedProjectId: z.number().optional(),
+      attachedProjectId: z.string().optional(),
     }))
     .mutation(async ({ ctx, input }) => {
       const result = await ctx.db.insert(chats).values({
@@ -20,31 +20,52 @@ export const chatRouter = createTRPCRouter({
       return result[0];
     }),
 
-  // Get all chats for the current user
+  // Get all chats for the current user with pagination
   getAll: protectedProcedure
     .input(z.object({
-      projectId: z.number().optional(),
-    }).optional())
+      projectId: z.string().optional(),
+      starred: z.boolean().optional(),
+      limit: z.number().min(1).max(100).nullish(),
+      cursor: z.number().nullish(),
+    }))
     .query(async ({ ctx, input }) => {
-      return await ctx.db.query.chats.findMany({
+      const limit = input.limit ?? 10;
+      const cursor = input.cursor;
+
+      const chats = await ctx.db.query.chats.findMany({
         where: (chats, { eq, and }) => {
           const conditions = [eq(chats.createdById, ctx.userId)];
-          if (input?.projectId) {
+          
+          if (input.projectId) {
             conditions.push(eq(chats.attachedProjectId, input.projectId));
           }
+          
+          if (input.starred !== undefined) {
+            conditions.push(eq(chats.starred, input.starred ? 1 : 0));
+          }
+          
           return and(...conditions);
         },
         orderBy: (chats, { desc }) => [desc(chats.createdAt)],
-        with: {
-          createdBy: true,
-          attachedProject: true,
-        },
+        limit: limit + 1,
+        ...(cursor ? { offset: cursor } : {}),
       });
+
+      let nextCursor: typeof cursor | undefined = undefined;
+      if (chats.length > limit) {
+        const nextItem = chats.pop();
+        nextCursor = cursor ? cursor + limit : limit;
+      }
+
+      return {
+        items: chats,
+        nextCursor,
+      };
     }),
 
   // Get a single chat by ID
   getById: protectedProcedure
-    .input(z.object({ id: z.number() }))
+    .input(z.object({ id: z.string() }))
     .query(async ({ ctx, input }) => {
       const chat = await ctx.db.query.chats.findFirst({
         where: (chats, { eq, and }) => and(
@@ -52,7 +73,6 @@ export const chatRouter = createTRPCRouter({
           eq(chats.createdById, ctx.userId)
         ),
         with: {
-          createdBy: true,
           attachedProject: true,
         },
       });
@@ -62,9 +82,9 @@ export const chatRouter = createTRPCRouter({
   // Update a chat
   update: protectedProcedure
     .input(z.object({
-      id: z.number(),
+      id: z.string(),
       name: z.string().min(1).optional(),
-      attachedProjectId: z.number().optional(),
+      attachedProjectId: z.string().optional(),
     }))
     .mutation(async ({ ctx, input }) => {
       // Verify chat ownership
@@ -124,7 +144,7 @@ export const chatRouter = createTRPCRouter({
 
   // Delete a chat
   delete: protectedProcedure
-    .input(z.object({ id: z.number() }))
+    .input(z.object({ id: z.string() }))
     .mutation(async ({ ctx, input }) => {
       // Verify chat ownership
       const chat = await ctx.db.query.chats.findFirst({

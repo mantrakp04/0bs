@@ -8,7 +8,7 @@ import { convertS3KeysToDocuments } from "@/server/api/routers/projectSource";
 export const agentRouter = createTRPCRouter({
   stream: protectedProcedure
     .input(z.object({
-      chatId: z.number(),
+      chatId: z.string(),
       input: z.string().optional(),
       sourceKeys: z.array(z.string()).optional(),
       useManus: z.boolean().optional().default(false),
@@ -50,7 +50,7 @@ export const agentRouter = createTRPCRouter({
         {
           version: "v2",
           configurable: {
-            thread_id: input.chatId.toString(),
+            thread_id: input.chatId,
             ...chat
           }
         }
@@ -62,7 +62,7 @@ export const agentRouter = createTRPCRouter({
 
   getState: protectedProcedure
     .input(z.object({
-      chatId: z.number(),
+      chatId: z.string(),
       getHistory: z.boolean().optional().default(false),
     }))
     .query(async ({ ctx, input }) => {
@@ -80,7 +80,7 @@ export const agentRouter = createTRPCRouter({
 
       const config = {
         configurable: {
-          thread_id: input.chatId.toString(),
+          thread_id: input.chatId,
         }
       }
       if (input.getHistory) {
