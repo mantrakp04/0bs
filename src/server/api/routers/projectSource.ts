@@ -1,7 +1,7 @@
 import { z } from "zod";
 import { createTRPCRouter, protectedProcedure } from "@/server/api/trpc";
-import { projectSourceIds, projectSources, sources } from "@/server/db/schema";
-import { eq, inArray } from "drizzle-orm";
+import { projectSourceIds, projectSources } from "@/server/db/schema";
+import { eq } from "drizzle-orm";
 import type { LangchainDocument } from "@/lib/types";
 import {
   CloudflareVectorizeStore
