@@ -2,7 +2,13 @@
 
 import { useEffect } from "react";
 import { useInView } from "react-intersection-observer";
-import { FolderOpenDot, LogOutIcon, MessageSquareText, Plus, Settings, Star } from "lucide-react";
+import {
+  FolderOpenDot,
+  LogOutIcon,
+  MessageSquareText,
+  Plus,
+  Star,
+} from "lucide-react";
 import Image from "next/image";
 import { SignedIn, SignOutButton, useClerk } from "@clerk/nextjs";
 import { api } from "@/trpc/react";
@@ -51,10 +57,9 @@ export function AppSidebar() {
   const { ref, inView } = useInView();
 
   // Query for starred chats
-  const { data: starredChats } = api.chat.getStarred.useQuery(
-    undefined,
-    { initialData: [] }
-  );
+  const { data: starredChats } = api.chat.getStarred.useQuery(undefined, {
+    initialData: [],
+  });
 
   // Query for infinite non-starred chats
   const {
@@ -68,7 +73,7 @@ export function AppSidebar() {
     },
     {
       getNextPageParam: (lastPage) => lastPage.nextCursor,
-    }
+    },
   );
 
   // Fetch next page when the last item comes into view
@@ -78,7 +83,8 @@ export function AppSidebar() {
     }
   }, [inView, fetchNextPage, hasNextPage, isFetchingNextPage]);
 
-  const nonStarredChats = infiniteData?.pages.flatMap((page) => page.items) ?? [];
+  const nonStarredChats =
+    infiniteData?.pages.flatMap((page) => page.items) ?? [];
 
   return (
     <Sidebar collapsible="offcanvas">
@@ -90,7 +96,11 @@ export function AppSidebar() {
               {/* Static menu items */}
               {staticItems.map((item) => (
                 <SidebarMenuItem key={item.title}>
-                  <SidebarMenuButton asChild size="default" variant={item.variant}>
+                  <SidebarMenuButton
+                    asChild
+                    size="default"
+                    variant={item.variant}
+                  >
                     <a href={item.url}>
                       <item.icon className="text-muted-foreground" />
                       <span className="text-muted-foreground text-md">
@@ -105,11 +115,17 @@ export function AppSidebar() {
               {starredChats.length > 0 && (
                 <>
                   <div className="p-0">
-                    <p className="text-xs font-medium text-muted-foreground">Starred Chats</p>
+                    <p className="text-muted-foreground text-xs font-medium">
+                      Starred Chats
+                    </p>
                   </div>
                   {starredChats.map((chat) => (
                     <SidebarMenuItem key={chat.id}>
-                      <SidebarMenuButton asChild size="default" variant="default">
+                      <SidebarMenuButton
+                        asChild
+                        size="default"
+                        variant="default"
+                      >
                         <a href={`/chat/${chat.id}`}>
                           <MessageSquareText className="text-muted-foreground" />
                           <span className="text-muted-foreground text-md flex-1">
@@ -125,7 +141,9 @@ export function AppSidebar() {
 
               {/* Recent Chats */}
               <div className="px-3 pt-4 pb-2">
-                <p className="text-xs font-medium text-muted-foreground">Recent Chats</p>
+                <p className="text-muted-foreground text-xs font-medium">
+                  Recent Chats
+                </p>
               </div>
               {nonStarredChats.map((chat) => (
                 <SidebarMenuItem key={chat.id}>
@@ -135,7 +153,7 @@ export function AppSidebar() {
                       <span className="text-muted-foreground text-md flex-1">
                         {chat.name || "Untitled Chat"}
                       </span>
-                      <Star className="h-4 w-4 text-muted-foreground/40" />
+                      <Star className="text-muted-foreground/40 h-4 w-4" />
                     </a>
                   </SidebarMenuButton>
                 </SidebarMenuItem>
@@ -144,7 +162,7 @@ export function AppSidebar() {
               {/* Infinite scroll trigger */}
               <div ref={ref} className="py-2">
                 {isFetchingNextPage && (
-                  <div className="text-center text-xs text-muted-foreground">
+                  <div className="text-muted-foreground text-center text-xs">
                     Loading more...
                   </div>
                 )}
@@ -152,30 +170,7 @@ export function AppSidebar() {
             </SidebarMenu>
           </SidebarGroupContent>
         </SidebarGroup>
-        <SidebarFooter className="flex w-full items-center justify-between">
-          <SignedIn>
-            <div className="dark:hover:bg-accent hover:bg-foreground/10 flex w-full flex-row items-center justify-between gap-2 rounded-sm transition duration-500">
-              <div className="flex flex-row items-center gap-2 p-2">
-                <Image
-                  src={`${user?.imageUrl}`}
-                  alt="user"
-                  width={32}
-                  height={32}
-                  className="h-8 w-8 rounded-full bg-white/20"
-                />
-                <div className="text-sm font-medium">{user?.firstName}</div>
-              </div>
-              <SignOutButton>
-                <div
-                  className="rounded-lg pr-2 transition duration-500 hover:cursor-pointer hover:text-red-700 dark:hover:text-red-400"
-                  onClick={() => signOut({ redirectUrl: "/sign-up" })}
-                >
-                  <LogOutIcon className="h-5 w-5" />
-                </div>
-              </SignOutButton>
-            </div>
-          </SignedIn>
-        </SidebarFooter>
+        {/* <SidebarFooter className="flex w-full items-center justify-between"></SidebarFooter> */}
       </SidebarContent>
     </Sidebar>
   );
