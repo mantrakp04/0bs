@@ -14,7 +14,9 @@ await client.connect(transport)
 const tools = await loadMcpTools("tools", client)
 
 export const getTools = async (config: RunnableConfig) => {
-  
+
+  const chatId = config.configurable?.thread_id as string;
+
   const shell_tools = ["shell_exec", "shell_view", "shell_wait", "shell_write_to_process", "shell_kill_process"]
   const fs_tools = ["file_read", "file_read_image", "file_write", "file_str_replace", "file_find_in_content", "file_find_by_name"]
   const browser_tools = ["browser_view", "browser_navigate", "browser_restart", "browser_click", "browser_input", "browser_move_mouse", "browser_press_key", "browser_select_option", "browser_scroll_up", "browser_scroll_down", "browser_console_exec", "browser_console_view"]

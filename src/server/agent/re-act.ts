@@ -12,6 +12,8 @@ const search_tool = new TavilySearch({
   tavilyApiKey: env.TAVILY_API_KEY,
 });
 
+// TODO: add retriver toolkit, memory
+
 export const callReActAgent = async (state: typeof AgentState.State, config: RunnableConfig) => {
   const { messages } = state;
   const { code_interpreter_toolkit } = await getTools(config);

@@ -64,7 +64,7 @@ export const projectSourceRouter = createTRPCRouter({
 
       const textSplitter = new RecursiveCharacterTextSplitter({
         chunkSize: 1000,
-        chunkOverlap: 200,
+        chunkOverlap: 200, // total 1200
         separators: ["\n## ", "\n### ", "\n#### ", "\n##### ", "\n###### ", "\n", " ", ""],
       });
 
