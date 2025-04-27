@@ -42,9 +42,6 @@ export const projectRouter = createTRPCRouter({
       const allProjects = await ctx.db.query.projects.findMany({
         where: (projects, { eq }) => eq(projects.createdById, ctx.userId),
         orderBy: (projects, { desc }) => [desc(projects.createdAt)],
-        with: {
-          createdBy: true,
-        },
         limit: limit + 1,
         ...(cursor ? { offset: cursor } : {}),
       });
@@ -68,9 +65,6 @@ export const projectRouter = createTRPCRouter({
       const project = await ctx.db.query.projects.findFirst({
         where: (projects, { eq, and }) =>
           and(eq(projects.id, input.id), eq(projects.createdById, ctx.userId)),
-        with: {
-          createdBy: true,
-        },
       });
       return project;
     }),

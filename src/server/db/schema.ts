@@ -104,6 +104,10 @@ export const projectSources = createTable(
   }),
 );
 
+export const projectsRelations = relations(projects, ({ many }) => ({
+  projectSources: many(projectSources),
+}));
+
 export const projectSourcesRelations = relations(projectSources, ({ one }) => ({
   project: one(projects, {
     fields: [projectSources.projectId],
