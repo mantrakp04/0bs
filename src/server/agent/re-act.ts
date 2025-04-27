@@ -6,6 +6,8 @@ import { createReactAgent } from "@langchain/langgraph/prebuilt";
 import { getTools } from "./workers/tools";
 import { env } from "@/env";
 import { createRetrieverWithFilters } from "./workers/vectorstore";
+import { db } from "../db";
+import { instructions } from "./types";
 
 const search_tool = new TavilySearch({
   maxResults: 5,
@@ -19,10 +21,18 @@ export const callReActAgent = async (state: typeof AgentState.State, config: Run
   const { messages } = state;
   const { code_interpreter_toolkit } = await getTools(config);
 
+  // Get memory
+  const memory = await db.query.userMemory.findFirst({
+    where: (userMemory, { eq }) => eq(userMemory.userId, config.configurable?.createdById),
+  });
+  const parsedMemory = instructions.parse(memory?.memory);
+
   const agent = createReactAgent({
     llm: model,
     tools: [search_tool, ...code_interpreter_toolkit, ...createRetrieverWithFilters(config)],
-    stateModifier: "You are a helpful assistant that provides accurate and concise information." // system prompt here
+    stateModifier: "You are a helpful assistant that provides accurate and concise information." +
+      "Additionaly you have access to the following information about the user relevent to the request: " +
+      parsedMemory.instructions.map((instruction) => `${instruction.key}: ${instruction.value}`).join("\n")
   });
 
   const output = await agent.invoke({

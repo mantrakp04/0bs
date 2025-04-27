@@ -6,16 +6,23 @@ import {
 import { type RunnableConfig } from "@langchain/core/runnables";
 import { HumanMessage } from "@langchain/core/messages";
 import { type IndexState, PlanState } from "./state";
-import { plan, response, replan, step } from "./types";
+import { plan, replan, step } from "./types";
 import * as prompts from "./prompt";
 import { model } from "./model";
 import { compiledWorkflow as supervisorWorkflow } from "./supervisor";
+import { instructions } from "./types";
+import { db } from "@/server/db";
 
 const planStep = async (state: typeof PlanState.State, config: RunnableConfig) => {
   const { messages } = state;
+  const memory = await db.query.userMemory.findFirst({
+    where: (userMemory, { eq }) => eq(userMemory.userId, config.configurable?.createdById),
+  });
+  const parsedMemory = instructions.parse(memory?.memory);
   const modelWithTools = prompts.plannerPrompt.pipe(model.withStructuredOutput(plan));
   const response = await modelWithTools.invoke({
-    messages: messages
+    messages: messages,
+    currentInstructions: parsedMemory.instructions.map((instruction) => `${instruction.key}: ${instruction.value}`).join("\n")
   }, config);
   return { plan: response.steps };
 }

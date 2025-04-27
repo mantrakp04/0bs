@@ -1,7 +1,7 @@
 import { relations, sql } from "drizzle-orm";
 import { sqliteTableCreator } from "drizzle-orm/sqlite-core";
 import { randomUUID } from "crypto";
-
+import { instructions } from "@/server/agent/types";
 /**
  * This is an example of how to use the multi-project schema feature of Drizzle ORM. Use the same
  * database instance for multiple projects.
@@ -66,4 +66,12 @@ export const projectSourceIds = createTable("project_source_ids", (d) => ({
 
 export const projectSourceIdsRelations = relations(projectSourceIds, ({ one }) => ({
   projectSource: one(projectSources, { fields: [projectSourceIds.projectSourceId], references: [projectSources.id] }),
+}));
+
+export const userMemory = createTable("user_memory", (d) => ({
+  id: d.text("id").primaryKey().$defaultFn(() => randomUUID()),
+  userId: d.text({ length: 255 }).notNull(),
+  memory: d.text("memory").$type<typeof instructions>(),
+  createdAt: d.integer({ mode: "timestamp" }).default(sql`(unixepoch())`),
+  updatedAt: d.integer({ mode: "timestamp" }).$onUpdate(() => new Date()),
 }));

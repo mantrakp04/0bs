@@ -1,6 +1,21 @@
 import { SystemMessage } from "@langchain/core/messages";
 import { ChatPromptTemplate, MessagesPlaceholder } from "@langchain/core/prompts";
-import { END } from "@langchain/langgraph";
+
+// Learning assistant prompt
+export const learningAssistantPrompt = ChatPromptTemplate.fromMessages([
+  [
+    "system", 
+    "You are an AI assistant that learns from conversations to improve your instructions.\n" +
+    "Current instructions:\n" +
+    "{currentInstructions}\n" +
+    "Recent conversation:\n"
+  ],
+  new MessagesPlaceholder("messages"),
+  ["human",
+    "Based on this conversation, update your instructions. Add new insights about the user's " +
+    "preferences, values, and communication style. Remove outdated information.\n"
+  ]
+]);
 
 // Planner prompt
 export const plannerPrompt = ChatPromptTemplate.fromMessages([
@@ -11,6 +26,8 @@ export const plannerPrompt = ChatPromptTemplate.fromMessages([
     "For each high-level step, create a detailed expansion with:\n" +
     "1. A clear description of the step\n" +
     "2. 1-4 substeps that break down how to accomplish this step, depending on the complexity of the step."],
+    "Additionaly you have access to the following information about the user relevent to the request:\n" +
+    "{currentInstructions}" +
   new MessagesPlaceholder("messages"),
 ]);
 

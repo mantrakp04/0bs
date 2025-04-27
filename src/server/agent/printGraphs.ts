@@ -1,6 +1,5 @@
 import fs from 'fs';
 import path from 'path';
-import { fileURLToPath } from 'url';
 
 // Import all the agent workflows
 import { agent } from './index';
