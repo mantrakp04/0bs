@@ -5,6 +5,7 @@ import { ModeToggle } from "./theme-toggle";
 import { Button } from "./ui/button";
 import { useSidebar } from "./ui/sidebar";
 import { usePanelStore } from "@/store/panelStore";
+import { SignedIn, SignedOut, UserButton, SignInButton } from "@clerk/nextjs";
 
 export function TopNav() {
   return (
@@ -41,7 +42,19 @@ export function TopNavRight() {
 
   return (
     <div className="pointer-events-auto top-0 right-0 transition duration-500 hover:cursor-pointer">
-      {!isPanelVisible && <ModeToggle />}
+      {!isPanelVisible && (
+        <div className="flex items-center gap-2">
+          <ModeToggle />
+          <SignedIn>
+            <UserButton />
+          </SignedIn>
+          <SignedOut>
+            <SignInButton>
+              <Button variant="outline">Sign In</Button>
+            </SignInButton>
+          </SignedOut>
+        </div>
+      )}
     </div>
   );
 }

@@ -2,20 +2,16 @@ import "@/styles/globals.css";
 
 import { type Metadata } from "next";
 import { Manrope } from "next/font/google";
-import {
-  ClerkProvider,
-  SignInButton,
-  SignUpButton,
-  SignedIn,
-  SignedOut
-} from '@clerk/nextjs'
-import CustomSignUp from "@/app/signup/[[...sign-up]]/page";
-import { Toaster } from "@/components/ui/sonner"
+import { ClerkProvider } from "@clerk/nextjs";
+import { dark } from "@clerk/themes";
+
+import { Toaster } from "@/components/ui/sonner";
 import { ThemeProvider } from "@/components/theme-provider";
 import { TRPCReactProvider } from "@/trpc/react";
 import { SidebarProvider } from "@/components/ui/sidebar";
 import { AppSidebar } from "@/components/app-sidebar";
 import { TopNav } from "@/components/topnav";
+
 export const metadata: Metadata = {
   title: "0bs-chat",
   description: "the everyting ai app",
@@ -23,9 +19,8 @@ export const metadata: Metadata = {
 };
 
 const manrope = Manrope({
-  // Changed to Manrope
   subsets: ["latin"],
-  variable: "--font-manrope", // Updated variable name
+  variable: "--font-manrope",
 });
 
 export default function RootLayout({
@@ -38,28 +33,25 @@ export default function RootLayout({
       suppressHydrationWarning
     >
       <body>
-        <ClerkProvider>
-          <SignedIn>
-            <SidebarProvider>
-              <ThemeProvider
-                attribute="class"
-                defaultTheme="system"
-                enableSystem
-                disableTransitionOnChange
-              >
-                <TopNav />
-                <TRPCReactProvider>
-                  <AppSidebar />
-                  {children}
-                </TRPCReactProvider>
-              </ThemeProvider>
-            </SidebarProvider>
-          </SignedIn>
-          <SignedOut>
-            <SignInButton />
-            <SignUpButton />
-            <CustomSignUp />
-          </SignedOut>
+        <ClerkProvider
+          appearance={{
+            baseTheme: dark,
+          }}
+        >
+          <SidebarProvider>
+            <ThemeProvider
+              attribute="class"
+              defaultTheme="system"
+              enableSystem
+              disableTransitionOnChange
+            >
+              <TopNav />
+              <TRPCReactProvider>
+                <AppSidebar />
+                {children}
+              </TRPCReactProvider>
+            </ThemeProvider>
+          </SidebarProvider>
         </ClerkProvider>
         <Toaster />
       </body>
