@@ -27,6 +27,8 @@ import { Textarea } from "@/components/ui/textarea";
 import { PlusIcon } from "lucide-react";
 import { api } from "@/trpc/react";
 import { DropdownMenuItem } from "@/components/ui/dropdown-menu";
+import { useUser } from "@clerk/nextjs";
+import { toast } from "sonner";
 
 const projectSchema = z.object({
   name: z.string().min(1, "Project name is required").max(256),
@@ -38,7 +40,8 @@ type ProjectFormData = z.infer<typeof projectSchema>;
 export function CreateProjectDialog() {
   const [open, setOpen] = useState(false);
   const utils = api.useUtils();
-  
+  const { user, isLoaded } = useUser();
+
   const form = useForm<ProjectFormData>({
     resolver: zodResolver(projectSchema),
     defaultValues: {
@@ -56,9 +59,16 @@ export function CreateProjectDialog() {
       // Invalidate the projects query to trigger a refetch
       await utils.project.getAll.invalidate();
     },
+    onError: (error) => {
+      toast.error(error.message || "Failed to create project");
+    },
   });
 
   const onSubmit = (data: ProjectFormData) => {
+    if (!user) {
+      toast.error("You must be logged in to create a project");
+      return;
+    }
     createProject.mutate(data);
   };
 
@@ -111,7 +121,7 @@ export function CreateProjectDialog() {
             <DialogFooter>
               <Button
                 type="submit"
-                disabled={createProject.isPending}
+                disabled={createProject.isPending || !isLoaded || !user}
               >
                 {createProject.isPending ? "Creating..." : "Create Project"}
               </Button>

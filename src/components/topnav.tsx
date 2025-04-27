@@ -50,7 +50,9 @@ export function TopNavRight() {
           </SignedIn>
           <SignedOut>
             <SignInButton>
-              <Button variant="outline">Sign In</Button>
+              <Button variant="outline" className="cursor-pointer">
+                Sign In
+              </Button>
             </SignInButton>
           </SignedOut>
         </div>

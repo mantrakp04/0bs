@@ -1,7 +1,13 @@
 "use client";
 
 import { Button } from "@/components/ui/button";
-import { PlusIcon, PaperclipIcon, FolderIcon, GithubIcon, Loader2Icon } from "lucide-react";
+import {
+  PlusIcon,
+  PaperclipIcon,
+  FolderIcon,
+  GithubIcon,
+  Loader2Icon,
+} from "lucide-react";
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -26,6 +32,7 @@ import {
   TooltipProvider,
   TooltipTrigger,
 } from "@/components/ui/tooltip";
+import { useUser } from "@clerk/nextjs";
 
 type Project = InferSelectModel<typeof projects>;
 
@@ -33,17 +40,26 @@ export function AddButton() {
   const uploadFile = useFileUploadStore((state) => state.uploadFile);
   const isUploading = useFileUploadStore((state) => state.isUploading);
   const error = useFileUploadStore((state) => state.error);
-  const setSelectedProject = useProjectStore((state) => state.setSelectedProject);
-  const fileInputRef = useRef<HTMLInputElement>(null);
-  
-  // Fetch 3 most recent projects with stale-while-revalidate
-  const { data: projectData, isLoading: isLoadingProjects } = api.project.getAll.useQuery(
-    { limit: 3 },
-    {
-      staleTime: 30 * 1000, // Consider data stale after 30 seconds
-      refetchInterval: 30 * 1000, // Refetch every 30 seconds in the background
-    }
+  const setSelectedProject = useProjectStore(
+    (state) => state.setSelectedProject,
   );
+  const fileInputRef = useRef<HTMLInputElement>(null);
+
+  const { user, isLoaded } = useUser();
+
+  const { data: projectData, isLoading: isLoadingProjects } =
+    api.project.getAll.useQuery(
+      { limit: 3 },
+      {
+        staleTime: 30 * 1000,
+        enabled: isLoaded && !!user,
+        refetchInterval: 30 * 1000,
+      },
+    );
+
+  if (!user) {
+    return null;
+  }
 
   const recentProjects = projectData?.items;
 
@@ -59,10 +75,12 @@ export function AddButton() {
         }
         toast.success("Files uploaded successfully");
       } catch (err) {
-        toast.error(err instanceof Error ? err.message : "Failed to upload files");
+        toast.error(
+          err instanceof Error ? err.message : "Failed to upload files",
+        );
       } finally {
         if (fileInputRef.current) {
-          fileInputRef.current.value = '';
+          fileInputRef.current.value = "";
         }
       }
     }
@@ -89,8 +107,8 @@ export function AddButton() {
           <Tooltip>
             <TooltipTrigger asChild>
               <DropdownMenuTrigger asChild>
-                <Button 
-                  size="icon" 
+                <Button
+                  size="icon"
                   variant="outline"
                   aria-label="Add content"
                   disabled={isUploading}
@@ -107,8 +125,8 @@ export function AddButton() {
               <p>Add content</p>
             </TooltipContent>
           </Tooltip>
-          <DropdownMenuContent align="start" className="w-48 mt-0.5">
-            <DropdownMenuItem 
+          <DropdownMenuContent align="start" className="mt-0.5 w-48">
+            <DropdownMenuItem
               onClick={() => fileInputRef.current?.click()}
               disabled={isUploading}
             >
@@ -122,7 +140,9 @@ export function AddButton() {
             <DropdownMenuItem disabled>
               <GithubIcon className="mr-2 h-4 w-4" />
               Add from GitHub
-              <span className="ml-auto text-xs text-muted-foreground">Soon</span>
+              <span className="text-muted-foreground ml-auto text-xs">
+                Soon
+              </span>
             </DropdownMenuItem>
             <DropdownMenuSeparator />
             <DropdownMenuSub>
@@ -142,7 +162,7 @@ export function AddButton() {
                 ) : recentProjects?.length ? (
                   <>
                     {recentProjects.map((project) => (
-                      <DropdownMenuItem 
+                      <DropdownMenuItem
                         key={project.id}
                         onSelect={() => handleProjectSelect(project)}
                       >
@@ -166,7 +186,12 @@ export function AddButton() {
             </DropdownMenuSub>
           </DropdownMenuContent>
         </DropdownMenu>
-        {error && toast.error(error)}
+        {error &&
+          toast.error(
+            typeof error === "string"
+              ? error
+              : "An unknown upload error occurred",
+          )}
       </div>
     </TooltipProvider>
   );

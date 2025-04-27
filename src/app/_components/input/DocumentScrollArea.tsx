@@ -1,16 +1,19 @@
 import { useFileUploadStore } from "@/store/uploadStore";
 import { ScrollArea } from "@/components/ui/scroll-area";
-import type { Document } from '@langchain/core/documents';
+import type { Document } from "@langchain/core/documents";
 import { DialogTrigger } from "@/components/ui/dialog";
 import { XIcon, FileIcon } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
-import { FilePreviewDialog, getFileIcon } from "@/app/_components/shared/FilePreviewDialog";
+import {
+  FilePreviewDialog,
+  getFileIcon,
+} from "@/app/_components/shared/FilePreviewDialog";
 
 function SkeletonBadge() {
   return (
-    <Badge variant="outline" className="animate-pulse bg-muted/50">
-      <FileIcon className="w-3 h-3 mr-1 opacity-50" />
-      <div className="h-3 w-20 bg-muted-foreground/20 rounded" />
+    <Badge variant="outline" className="bg-muted/50 animate-pulse">
+      <FileIcon className="mr-1 h-3 w-3 opacity-50" />
+      <div className="bg-muted-foreground/20 h-3 w-20 rounded" />
     </Badge>
   );
 }
@@ -31,9 +34,7 @@ export default function DocumentScrollArea() {
   );
 }
 
-function DocumentBadge({ document }: {
-  document: Document;
-}) {
+function DocumentBadge({ document }: { document: Document }) {
   const { removeFile } = useFileUploadStore();
 
   const handleRemove = (e: React.MouseEvent) => {
@@ -54,15 +55,15 @@ function DocumentBadge({ document }: {
       <DialogTrigger asChild>
         <Badge variant="outline" className="group cursor-pointer">
           {getFileIcon(document.metadata.type)}
-          <span className="text-sm font-normal truncate max-w-[120px]">
+          <span className="max-w-[120px] truncate text-sm font-normal">
             {document.metadata.name}
           </span>
           <button
             onClick={handleRemove}
-            className="hidden group-hover:block hover:bg-background/50 rounded p-0.5 transition-opacity"
+            className="hover:bg-background/50 hidden rounded p-0.5 transition-opacity group-hover:block"
             aria-label="Remove file"
           >
-            <XIcon className="w-3 h-3" />
+            <XIcon className="h-3 w-3" />
           </button>
         </Badge>
       </DialogTrigger>

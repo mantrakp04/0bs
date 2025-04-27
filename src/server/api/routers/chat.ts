@@ -7,27 +7,34 @@ import { TRPCError } from "@trpc/server";
 export const chatRouter = createTRPCRouter({
   // Create a new chat
   create: protectedProcedure
-    .input(z.object({
-      name: z.string().min(1).optional(),
-      attachedProjectId: z.string().optional(),
-    }))
+    .input(
+      z.object({
+        name: z.string().min(1).optional(),
+        attachedProjectId: z.string().optional(),
+      }),
+    )
     .mutation(async ({ ctx, input }) => {
-      const result = await ctx.db.insert(chats).values({
-        name: input.name,
-        attachedProjectId: input.attachedProjectId,
-        createdById: ctx.userId,
-      }).returning();
+      const result = await ctx.db
+        .insert(chats)
+        .values({
+          name: input.name,
+          attachedProjectId: input.attachedProjectId,
+          createdById: ctx.userId,
+        })
+        .returning();
       return result[0];
     }),
 
   // Get all chats for the current user with pagination
   getAll: protectedProcedure
-    .input(z.object({
-      projectId: z.string().optional(),
-      starred: z.boolean().optional(),
-      limit: z.number().min(1).max(100).nullish(),
-      cursor: z.number().nullish(),
-    }))
+    .input(
+      z.object({
+        projectId: z.string().optional(),
+        starred: z.boolean().optional(),
+        limit: z.number().min(1).max(100).nullish(),
+        cursor: z.number().nullish(),
+      }),
+    )
     .query(async ({ ctx, input }) => {
       const limit = input.limit ?? 10;
       const cursor = input.cursor;
@@ -35,15 +42,15 @@ export const chatRouter = createTRPCRouter({
       const chats = await ctx.db.query.chats.findMany({
         where: (chats, { eq, and }) => {
           const conditions = [eq(chats.createdById, ctx.userId)];
-          
+
           if (input.projectId) {
             conditions.push(eq(chats.attachedProjectId, input.projectId));
           }
-          
+
           if (input.starred !== undefined) {
             conditions.push(eq(chats.starred, input.starred ? 1 : 0));
           }
-          
+
           return and(...conditions);
         },
         orderBy: (chats, { desc }) => [desc(chats.createdAt)],
@@ -68,10 +75,8 @@ export const chatRouter = createTRPCRouter({
     .input(z.object({ id: z.string() }))
     .query(async ({ ctx, input }) => {
       const chat = await ctx.db.query.chats.findFirst({
-        where: (chats, { eq, and }) => and(
-          eq(chats.id, input.id),
-          eq(chats.createdById, ctx.userId)
-        ),
+        where: (chats, { eq, and }) =>
+          and(eq(chats.id, input.id), eq(chats.createdById, ctx.userId)),
         with: {
           attachedProject: true,
         },
@@ -81,28 +86,30 @@ export const chatRouter = createTRPCRouter({
 
   // Update a chat
   update: protectedProcedure
-    .input(z.object({
-      id: z.string(),
-      name: z.string().min(1).optional(),
-      attachedProjectId: z.string().optional(),
-    }))
+    .input(
+      z.object({
+        id: z.string(),
+        name: z.string().min(1).optional(),
+        attachedProjectId: z.string().optional(),
+      }),
+    )
     .mutation(async ({ ctx, input }) => {
       // Verify chat ownership
       const chat = await ctx.db.query.chats.findFirst({
         where: (chats, { eq }) => eq(chats.id, input.id),
       });
-      
+
       if (!chat) {
         throw new TRPCError({
-          code: 'NOT_FOUND',
-          message: `Chat with id ${input.id} not found`
+          code: "NOT_FOUND",
+          message: `Chat with id ${input.id} not found`,
         });
       }
-      
+
       if (chat.createdById !== ctx.userId) {
         throw new TRPCError({
-          code: 'FORBIDDEN',
-          message: 'You do not have permission to update this chat'
+          code: "FORBIDDEN",
+          message: "You do not have permission to update this chat",
         });
       }
 
@@ -112,18 +119,19 @@ export const chatRouter = createTRPCRouter({
         const project = await ctx.db.query.projects.findFirst({
           where: (projects, { eq }) => eq(projects.id, projectId),
         });
-        
+
         if (!project) {
           throw new TRPCError({
-            code: 'NOT_FOUND',
-            message: `Project with id ${projectId} not found`
+            code: "NOT_FOUND",
+            message: `Project with id ${projectId} not found`,
           });
         }
-        
+
         if (project.createdById !== ctx.userId) {
           throw new TRPCError({
-            code: 'FORBIDDEN',
-            message: 'You do not have permission to attach this chat to the specified project'
+            code: "FORBIDDEN",
+            message:
+              "You do not have permission to attach this chat to the specified project",
           });
         }
       }
@@ -135,9 +143,7 @@ export const chatRouter = createTRPCRouter({
           attachedProjectId: input.attachedProjectId,
           updatedAt: new Date(),
         })
-        .where(
-          eq(chats.id, input.id)
-        )
+        .where(eq(chats.id, input.id))
         .returning();
       return result[0];
     }),
@@ -150,26 +156,22 @@ export const chatRouter = createTRPCRouter({
       const chat = await ctx.db.query.chats.findFirst({
         where: (chats, { eq }) => eq(chats.id, input.id),
       });
-      
+
       if (!chat) {
         throw new TRPCError({
-          code: 'NOT_FOUND',
-          message: `Chat with id ${input.id} not found`
-        });
-      }
-      
-      if (chat.createdById !== ctx.userId) {
-        throw new TRPCError({
-          code: 'FORBIDDEN',
-          message: 'You do not have permission to delete this chat'
+          code: "NOT_FOUND",
+          message: `Chat with id ${input.id} not found`,
         });
       }
 
-      await ctx.db
-        .delete(chats)
-        .where(
-          eq(chats.id, input.id)
-        );
+      if (chat.createdById !== ctx.userId) {
+        throw new TRPCError({
+          code: "FORBIDDEN",
+          message: "You do not have permission to delete this chat",
+        });
+      }
+
+      await ctx.db.delete(chats).where(eq(chats.id, input.id));
       return { success: true };
     }),
 });

@@ -35,7 +35,7 @@ export async function POST(request: Request) {
       files.map(async (file) => {
         // Generate unique key for the file
         const key = `${session.userId}/${Date.now()}-${file.name}`;
-        
+
         // Get file buffer
         const buffer = Buffer.from(await file.arrayBuffer());
 
@@ -53,18 +53,21 @@ export async function POST(request: Request) {
         await s3Client.send(command);
 
         // Create source record in database
-        const [source] = await db.insert(sources).values({
-          name: file.name,
-          key: key,
-          type: file.type,
-          size: file.size,
-        }).returning();
+        const [source] = await db
+          .insert(sources)
+          .values({
+            name: file.name,
+            key: key,
+            type: file.type,
+            size: file.size,
+          })
+          .returning();
 
         return {
           source,
           url: `${env.S3_PUBLIC_URL}/${key}`,
         };
-      })
+      }),
     );
 
     // Return success response
@@ -72,19 +75,11 @@ export async function POST(request: Request) {
       success: true,
       files: uploadedSources,
     });
-
   } catch (error) {
     console.error("Error handling file upload:", error);
     return NextResponse.json(
       { error: "Failed to upload file" },
-      { status: 500 }
+      { status: 500 },
     );
   }
 }
-
-// Configure the API route to handle larger files
-export const config = {
-  api: {
-    bodyParser: false,
-  },
-};

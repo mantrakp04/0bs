@@ -2,21 +2,13 @@
 
 import { useEffect } from "react";
 import { useInView } from "react-intersection-observer";
-import {
-  FolderOpenDot,
-  LogOutIcon,
-  MessageSquareText,
-  Plus,
-  Star,
-} from "lucide-react";
-import Image from "next/image";
-import { SignedIn, SignOutButton, useClerk } from "@clerk/nextjs";
+import { FolderOpenDot, MessageSquareText, Plus, Star } from "lucide-react";
+import { useUser } from "@clerk/nextjs";
 import { api } from "@/trpc/react";
 
 import {
   Sidebar,
   SidebarContent,
-  SidebarFooter,
   SidebarGroup,
   SidebarGroupContent,
   SidebarGroupLabel,
@@ -29,6 +21,7 @@ import {
 const staticItems: {
   title: string;
   url: string;
+  requiresAuth: boolean;
   icon: React.ElementType;
   variant: "outline" | "default";
 }[] = [
@@ -36,30 +29,43 @@ const staticItems: {
     title: "New Chat",
     url: "/chat/new",
     icon: Plus,
+    requiresAuth: true,
     variant: "outline",
   },
   {
     title: "Projects",
     url: "/projects",
+    requiresAuth: true,
     icon: FolderOpenDot,
     variant: "default",
   },
   {
     title: "Chats",
     url: "/chats",
+    requiresAuth: true,
     icon: MessageSquareText,
     variant: "default",
   },
 ];
 
 export function AppSidebar() {
-  const { signOut, user } = useClerk();
+  const { user, isLoaded } = useUser();
   const { ref, inView } = useInView();
 
-  // Query for starred chats
-  const { data: starredChats } = api.chat.getStarred.useQuery(undefined, {
-    initialData: [],
-  });
+  // Move all hooks before the conditional check
+  const { data: starredChats } = api.chat.getAll.useQuery(
+    {
+      starred: true,
+      limit: 5,
+    },
+    {
+      enabled: isLoaded && !!user, // Only fetch if user exists and auth is loaded
+      initialData: {
+        items: [],
+        nextCursor: undefined,
+      },
+    },
+  );
 
   // Query for infinite non-starred chats
   const {
@@ -67,21 +73,22 @@ export function AppSidebar() {
     fetchNextPage,
     hasNextPage,
     isFetchingNextPage,
-  } = api.chat.infiniteChats.useInfiniteQuery(
+  } = api.chat.getAll.useInfiniteQuery(
     {
-      limit: 10,
+      limit: 5,
     },
     {
+      enabled: isLoaded && !!user, // Only fetch if user exists and auth is loaded
       getNextPageParam: (lastPage) => lastPage.nextCursor,
     },
   );
 
   // Fetch next page when the last item comes into view
   useEffect(() => {
-    if (inView && hasNextPage && !isFetchingNextPage) {
-      fetchNextPage();
+    if (isLoaded && user && inView && hasNextPage && !isFetchingNextPage) {
+      void fetchNextPage();
     }
-  }, [inView, fetchNextPage, hasNextPage, isFetchingNextPage]);
+  }, [inView, fetchNextPage, hasNextPage, isFetchingNextPage, user, isLoaded]); // Added isLoaded to dependencies
 
   const nonStarredChats =
     infiniteData?.pages.flatMap((page) => page.items) ?? [];
@@ -101,7 +108,14 @@ export function AppSidebar() {
                     size="default"
                     variant={item.variant}
                   >
-                    <a href={item.url}>
+                    <a
+                      href={item.requiresAuth && !user ? undefined : item.url}
+                      className={`${
+                        item.requiresAuth && !user
+                          ? "cursor-not-allowed opacity-50"
+                          : ""
+                      } `}
+                    >
                       <item.icon className="text-muted-foreground" />
                       <span className="text-muted-foreground text-md">
                         {item.title}
@@ -112,14 +126,17 @@ export function AppSidebar() {
               ))}
 
               {/* Starred Chats */}
-              {starredChats.length > 0 && (
+              {user && starredChats && (
                 <>
-                  <div className="p-0">
-                    <p className="text-muted-foreground text-xs font-medium">
-                      Starred Chats
-                    </p>
-                  </div>
-                  {starredChats.map((chat) => (
+                  {starredChats.items.length > 0 && (
+                    <div className="px-2 pt-4">
+                      <p className="text-muted-foreground font-medium">
+                        Starred Chats
+                      </p>
+                    </div>
+                  )}
+
+                  {starredChats.items.map((chat) => (
                     <SidebarMenuItem key={chat.id}>
                       <SidebarMenuButton
                         asChild
@@ -129,7 +146,7 @@ export function AppSidebar() {
                         <a href={`/chat/${chat.id}`}>
                           <MessageSquareText className="text-muted-foreground" />
                           <span className="text-muted-foreground text-md flex-1">
-                            {chat.name || "Untitled Chat"}
+                            {chat.name ?? "Untitled Chat"}
                           </span>
                           <Star className="h-4 w-4 fill-yellow-400 text-yellow-400" />
                         </a>
@@ -140,24 +157,28 @@ export function AppSidebar() {
               )}
 
               {/* Recent Chats */}
-              <div className="px-3 pt-4 pb-2">
-                <p className="text-muted-foreground text-xs font-medium">
-                  Recent Chats
-                </p>
-              </div>
-              {nonStarredChats.map((chat) => (
-                <SidebarMenuItem key={chat.id}>
-                  <SidebarMenuButton asChild size="default" variant="default">
-                    <a href={`/chat/${chat.id}`}>
-                      <MessageSquareText className="text-muted-foreground" />
-                      <span className="text-muted-foreground text-md flex-1">
-                        {chat.name || "Untitled Chat"}
-                      </span>
-                      <Star className="text-muted-foreground/40 h-4 w-4" />
-                    </a>
-                  </SidebarMenuButton>
-                </SidebarMenuItem>
-              ))}
+              {user && (
+                <div className="px-2 pt-4">
+                  <p className="text-muted-foreground font-medium">
+                    Recent Chats
+                  </p>
+                </div>
+              )}
+
+              {user &&
+                nonStarredChats.map((chat) => (
+                  <SidebarMenuItem key={chat.id}>
+                    <SidebarMenuButton asChild size="default" variant="default">
+                      <a href={`/chat/${chat.id}`}>
+                        <MessageSquareText className="text-muted-foreground" />
+                        <span className="text-muted-foreground text-md flex-1">
+                          {chat.name ?? "New Chat"}
+                        </span>
+                        <Star className="text-muted-foreground/40 h-4 w-4" />
+                      </a>
+                    </SidebarMenuButton>
+                  </SidebarMenuItem>
+                ))}
 
               {/* Infinite scroll trigger */}
               <div ref={ref} className="py-2">
@@ -170,7 +191,6 @@ export function AppSidebar() {
             </SidebarMenu>
           </SidebarGroupContent>
         </SidebarGroup>
-        {/* <SidebarFooter className="flex w-full items-center justify-between"></SidebarFooter> */}
       </SidebarContent>
     </Sidebar>
   );
