@@ -10,6 +10,7 @@ import { callPlanAndExecuteAgent } from "./plan";
 import { HumanMessage } from "@langchain/core/messages";
 import { SqliteSaver } from "@langchain/langgraph-checkpoint-sqlite";
 import { env } from "@/env";
+import { updateMemoryNode } from "./memory";
 
 const routeInitialNode = async (state: typeof IndexState.State) => {
   const nextNode = state.useManus ? "planAndExecuteAgent" : "reactAgent";
@@ -24,8 +25,9 @@ const workflow = new StateGraph(IndexState)
   .addNode("router", routeInitialNode, { ends: ["reactAgent", "planAndExecuteAgent"] })
   .addNode("reactAgent", callReActAgent, { ends: [END] })
   .addNode("planAndExecuteAgent", callPlanAndExecuteAgent, { ends: [END] })
-
+  .addNode("updateMemory", updateMemoryNode, { ends: [END] })
   .addEdge(START, "router")
+  .addEdge(START, "updateMemory")
 
 export const agent = workflow.compile({ checkpointer: checkpoint });
 
