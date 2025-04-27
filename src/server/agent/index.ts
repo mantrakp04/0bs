@@ -8,7 +8,7 @@ import { IndexState } from "./state";
 import { callReActAgent } from "./re-act";
 import { callPlanAndExecuteAgent } from "./plan";
 import { HumanMessage } from "@langchain/core/messages";
-import { SqliteSaver } from "@langchain/langgraph-checkpoint-sqlite";
+import { PostgresSaver } from "@langchain/langgraph-checkpoint-postgres";
 import { env } from "@/env";
 import { updateMemoryNode } from "./memory";
 
@@ -19,7 +19,8 @@ const routeInitialNode = async (state: typeof IndexState.State) => {
   });
 }
 
-const checkpoint = SqliteSaver.fromConnString(env.DATABASE_URL)
+const checkpoint = PostgresSaver.fromConnString(env.DATABASE_URL)
+await checkpoint.setup()
 
 const workflow = new StateGraph(IndexState)
   .addNode("router", routeInitialNode, { ends: ["reactAgent", "planAndExecuteAgent"] })

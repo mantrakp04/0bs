@@ -1,5 +1,5 @@
 import { relations, sql } from "drizzle-orm";
-import { sqliteTableCreator } from "drizzle-orm/sqlite-core";
+import { index, pgTableCreator, primaryKey, timestamp } from "drizzle-orm/pg-core";
 import { randomUUID } from "crypto";
 import { instructions } from "@/server/agent/types";
 /**
@@ -8,16 +8,18 @@ import { instructions } from "@/server/agent/types";
  *
  * @see https://orm.drizzle.team/docs/goodies#multi-project-schema
  */
-export const createTable = sqliteTableCreator((name) => `0bs_${name}`);
+export const createTable = pgTableCreator((name) => `0bs_${name}`);
 
 export const sources = createTable("source", (d) => ({
   id: d.text("id").primaryKey().$defaultFn(() => randomUUID()),
-  name: d.text({ length: 255 }),
-  key: d.text({ length: 255 }),
-  type: d.text({ length: 255 }),
-  size: d.integer({ mode: "number" }),
-  createdAt: d.integer({ mode: "timestamp" }).default(sql`(unixepoch())`),
-  updatedAt: d.integer({ mode: "timestamp" }).$onUpdate(() => new Date()),
+  name: d.text(),
+  key: d.text(),
+  type: d.text(),
+  size: d.integer(),
+  createdAt: timestamp("created_at").defaultNow(),
+  updatedAt: timestamp("updated_at").defaultNow(),
+}), (t) => ({
+  keyTypeIdx: index("key_type_idx").on(t.key, t.type),
 }));
 
 export const sourcesRelations = relations(sources, ({ many }) => ({
@@ -26,12 +28,15 @@ export const sourcesRelations = relations(sources, ({ many }) => ({
 
 export const chats = createTable("chat", (d) => ({
   id: d.text("id").primaryKey().$defaultFn(() => randomUUID()),
-  createdById: d.text({ length: 255 }).notNull(),
-  name: d.text({ length: 255 }),
+  createdById: d.text().notNull(),
+  name: d.text(),
   attachedProjectId: d.text("attachedProjectId").references(() => projects.id),
-  starred: d.integer({ mode: "number" }).default(0),
-  createdAt: d.integer({ mode: "timestamp" }).default(sql`(unixepoch())`),
-  updatedAt: d.integer({ mode: "timestamp" }).$onUpdate(() => new Date()),
+  starred: d.integer().default(0),
+  createdAt: timestamp("created_at").defaultNow(),
+  updatedAt: timestamp("updated_at").defaultNow(),
+}), (t) => ({
+  createdByIdIdx: index("chat_created_by_id_idx").on(t.createdById),
+  attachedProjectIdIdx: index("attached_project_id_idx").on(t.attachedProjectId),
 }));
 
 export const chatsRelations = relations(chats, ({ one }) => ({
@@ -40,17 +45,22 @@ export const chatsRelations = relations(chats, ({ one }) => ({
 
 export const projects = createTable("project", (d) => ({
   id: d.text("id").primaryKey().$defaultFn(() => randomUUID()),
-  createdById: d.text({ length: 255 }).notNull(),
-  name: d.text({ length: 255 }),
+  createdById: d.text().notNull(),
+  name: d.text(),
   description: d.text(),
-  createdAt: d.integer({ mode: "timestamp" }).default(sql`(unixepoch())`),
-  updatedAt: d.integer({ mode: "timestamp" }).$onUpdate(() => new Date()),
+  createdAt: timestamp("created_at").defaultNow(),
+  updatedAt: timestamp("updated_at").defaultNow(),
+}), (t) => ({
+  createdByIdIdx: index("project_created_by_id_idx").on(t.createdById),
 }));
 
 export const projectSources = createTable("project_source", (d) => ({
   id: d.text("id").primaryKey().$defaultFn(() => randomUUID()),
   projectId: d.text("projectId").notNull().references(() => projects.id),
   sourceId: d.text("sourceId").notNull().references(() => sources.id),
+}), (t) => ({
+  projectIdIdx: index("project_id_idx").on(t.projectId),
+  sourceIdIdx: index("source_id_idx").on(t.sourceId),
 }));
 
 export const projectSourcesRelations = relations(projectSources, ({ one }) => ({
@@ -60,8 +70,10 @@ export const projectSourcesRelations = relations(projectSources, ({ one }) => ({
 
 export const projectSourceIds = createTable("project_source_ids", (d) => ({
   id: d.text("id").primaryKey().$defaultFn(() => randomUUID()),
-  vectorId: d.text({ length: 255 }).notNull(),
+  vectorId: d.text().notNull(),
   projectSourceId: d.text("projectSourceId").notNull().references(() => projectSources.id),
+}), (t) => ({
+  projectSourceIdIdx: index("project_source_id_idx").on(t.projectSourceId),
 }));
 
 export const projectSourceIdsRelations = relations(projectSourceIds, ({ one }) => ({
@@ -70,8 +82,10 @@ export const projectSourceIdsRelations = relations(projectSourceIds, ({ one }) =
 
 export const userMemory = createTable("user_memory", (d) => ({
   id: d.text("id").primaryKey().$defaultFn(() => randomUUID()),
-  userId: d.text({ length: 255 }).notNull(),
+  userId: d.text().notNull(),
   memory: d.text("memory").$type<typeof instructions>(),
-  createdAt: d.integer({ mode: "timestamp" }).default(sql`(unixepoch())`),
-  updatedAt: d.integer({ mode: "timestamp" }).$onUpdate(() => new Date()),
+  createdAt: timestamp("created_at").defaultNow(),
+  updatedAt: timestamp("updated_at").defaultNow(),
+}), (t) => ({
+  userIdIdx: index("user_id_idx").on(t.userId),
 }));

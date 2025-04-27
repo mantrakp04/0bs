@@ -13,3 +13,5 @@ services:
 
 volumes:
   pg_data:
+
+# DATABASE_URL=postgresql://postgres:password@localhost:5432/0bs
