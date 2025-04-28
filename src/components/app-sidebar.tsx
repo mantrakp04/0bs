@@ -78,8 +78,12 @@ export function AppSidebar() {
       limit: 5,
     },
     {
-      enabled: isLoaded && !!user, // Only fetch if user exists and auth is loaded
+      staleTime: 5 * 60 * 1000,
+      enabled: isLoaded && !!user,
       getNextPageParam: (lastPage) => lastPage.nextCursor,
+      refetchOnWindowFocus: false,
+      refetchOnReconnect: false,
+      refetchOnMount: false,
     },
   );
 
@@ -88,7 +92,7 @@ export function AppSidebar() {
     if (isLoaded && user && inView && hasNextPage && !isFetchingNextPage) {
       void fetchNextPage();
     }
-  }, [inView, fetchNextPage, hasNextPage, isFetchingNextPage, user, isLoaded]); // Added isLoaded to dependencies
+  }, [inView, fetchNextPage, hasNextPage, isFetchingNextPage, isLoaded, user]);
 
   const nonStarredChats =
     infiniteData?.pages.flatMap((page) => page.items) ?? [];

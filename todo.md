@@ -1,4 +1,9 @@
-## todo
+### todo
 
-[ ] check for clerk
-[ ] ui changes
+- [x] moving to clerk
+
+- [x] adding custom sign-in page + routes configuration
+
+- [x] revamp ui (minimal and simple)
+
+- [ ] cache mechanism

@@ -20,7 +20,7 @@ import {
 } from "@/components/ui/dropdown-menu";
 import { useFileUploadStore } from "@/store/uploadStore";
 import { useProjectStore } from "@/store/projectStore";
-import { useRef } from "react";
+import { useRef, useState } from "react";
 import { api } from "@/trpc/react";
 import { CreateProjectDialog } from "./CreateProjectDialog";
 import { type InferSelectModel } from "drizzle-orm";
@@ -44,6 +44,7 @@ export function AddButton() {
     (state) => state.setSelectedProject,
   );
   const fileInputRef = useRef<HTMLInputElement>(null);
+  const [isProjectSubMenuOpen, setIsProjectSubMenuOpen] = useState(false);
 
   const { user, isLoaded } = useUser();
 
@@ -51,9 +52,11 @@ export function AddButton() {
     api.project.getAll.useQuery(
       { limit: 3 },
       {
-        staleTime: 30 * 1000,
-        enabled: isLoaded && !!user,
-        refetchInterval: 30 * 1000,
+        staleTime: 3 * 60 * 1000,
+        enabled: isProjectSubMenuOpen && isLoaded && !!user,
+        refetchOnWindowFocus: false,
+        refetchOnReconnect: false,
+        refetchOnMount: false,
       },
     );
 
@@ -145,41 +148,45 @@ export function AddButton() {
               </span>
             </DropdownMenuItem>
             <DropdownMenuSeparator />
-            <DropdownMenuSub>
+            <DropdownMenuSub onOpenChange={setIsProjectSubMenuOpen}>
               <DropdownMenuSubTrigger>
                 <FolderIcon className="mr-2 h-4 w-4" />
                 Use a project
-                {isLoadingProjects && (
+                {isProjectSubMenuOpen && isLoadingProjects && (
                   <Loader2Icon className="ml-auto h-4 w-4 animate-spin" />
                 )}
               </DropdownMenuSubTrigger>
               <DropdownMenuSubContent className="ml-2">
-                {isLoadingProjects ? (
-                  <DropdownMenuItem disabled>
-                    <Loader2Icon className="mr-2 h-4 w-4 animate-spin" />
-                    Loading projects...
-                  </DropdownMenuItem>
-                ) : recentProjects?.length ? (
+                {isProjectSubMenuOpen && (
                   <>
-                    {recentProjects.map((project) => (
-                      <DropdownMenuItem
-                        key={project.id}
-                        onSelect={() => handleProjectSelect(project)}
-                      >
-                        <FolderIcon className="mr-2 h-4 w-4" />
-                        {project.name}
+                    {isLoadingProjects ? (
+                      <DropdownMenuItem disabled>
+                        <Loader2Icon className="mr-2 h-4 w-4 animate-spin" />
+                        Loading projects...
                       </DropdownMenuItem>
-                    ))}
-                    <DropdownMenuSeparator />
-                    <CreateProjectDialog />
-                  </>
-                ) : (
-                  <>
-                    <DropdownMenuItem disabled>
-                      No recent projects
-                    </DropdownMenuItem>
-                    <DropdownMenuSeparator />
-                    <CreateProjectDialog />
+                    ) : recentProjects?.length ? (
+                      <>
+                        {recentProjects.map((project) => (
+                          <DropdownMenuItem
+                            key={project.id}
+                            onSelect={() => handleProjectSelect(project)}
+                          >
+                            <FolderIcon className="mr-2 h-4 w-4" />
+                            {project.name}
+                          </DropdownMenuItem>
+                        ))}
+                        <DropdownMenuSeparator />
+                        <CreateProjectDialog />
+                      </>
+                    ) : (
+                      <>
+                        <DropdownMenuItem disabled>
+                          No recent projects
+                        </DropdownMenuItem>
+                        <DropdownMenuSeparator />
+                        <CreateProjectDialog />
+                      </>
+                    )}
                   </>
                 )}
               </DropdownMenuSubContent>
