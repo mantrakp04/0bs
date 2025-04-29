@@ -6,6 +6,8 @@ import { createTRPCReact } from "@trpc/react-query";
 import { type inferRouterInputs, type inferRouterOutputs } from "@trpc/server";
 import { useState } from "react";
 import SuperJSON from "superjson";
+import { PersistQueryClientProvider } from "@tanstack/react-query-persist-client";
+import { createSyncStoragePersister } from "@tanstack/query-sync-storage-persister";
 
 import { type AppRouter } from "@/server/api/root";
 import { createQueryClient } from "./query-client";
@@ -38,8 +40,21 @@ export type RouterInputs = inferRouterInputs<AppRouter>;
  */
 export type RouterOutputs = inferRouterOutputs<AppRouter>;
 
+// Create persister for client-side only
+const createPersister = () => {
+  if (typeof window === "undefined") return undefined;
+  
+  return createSyncStoragePersister({
+    storage: window.localStorage,
+    key: 'trpc-query-cache',
+    serialize: SuperJSON.stringify,
+    deserialize: SuperJSON.parse,
+  });
+};
+
 export function TRPCReactProvider(props: { children: React.ReactNode }) {
   const queryClient = getQueryClient();
+  const persister = createPersister();
 
   const [trpcClient] = useState(() =>
     api.createClient({
@@ -62,12 +77,27 @@ export function TRPCReactProvider(props: { children: React.ReactNode }) {
     }),
   );
 
+  if (!persister) {
+    // Server-side rendering - use regular QueryClientProvider
+    return (
+      <QueryClientProvider client={queryClient}>
+        <api.Provider client={trpcClient} queryClient={queryClient}>
+          {props.children}
+        </api.Provider>
+      </QueryClientProvider>
+    );
+  }
+
+  // Client-side rendering - use PersistQueryClientProvider
   return (
-    <QueryClientProvider client={queryClient}>
+    <PersistQueryClientProvider
+      client={queryClient}
+      persistOptions={{ persister }}
+    >
       <api.Provider client={trpcClient} queryClient={queryClient}>
         {props.children}
       </api.Provider>
-    </QueryClientProvider>
+    </PersistQueryClientProvider>
   );
 }
 

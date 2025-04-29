@@ -43,6 +43,12 @@ export function AddButton() {
   const setSelectedProject = useProjectStore(
     (state) => state.setSelectedProject,
   );
+  const selectedProject = useProjectStore(
+    (state) => state.selectedProject,
+  );
+  const clearSelectedProject = useProjectStore(
+    (state) => state.clearSelectedProject,
+  );
   const fileInputRef = useRef<HTMLInputElement>(null);
   const [isProjectSubMenuOpen, setIsProjectSubMenuOpen] = useState(false);
 
@@ -90,6 +96,7 @@ export function AddButton() {
   };
 
   const handleProjectSelect = (project: Project) => {
+    clearSelectedProject();
     setSelectedProject(project);
     toast.success(`Switched to project: ${project.name}`);
   };

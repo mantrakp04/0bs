@@ -29,6 +29,7 @@ import { api } from "@/trpc/react";
 import { DropdownMenuItem } from "@/components/ui/dropdown-menu";
 import { useUser } from "@clerk/nextjs";
 import { toast } from "sonner";
+import { useProjectStore } from "@/store/projectStore";
 
 const projectSchema = z.object({
   name: z.string().min(1, "Project name is required").max(256),
@@ -41,6 +42,8 @@ export function CreateProjectDialog() {
   const [open, setOpen] = useState(false);
   const utils = api.useUtils();
   const { user, isLoaded } = useUser();
+  const setSelectedProject = useProjectStore((state) => state.setSelectedProject);
+  const clearSelectedProject = useProjectStore((state) => state.clearSelectedProject);
 
   const form = useForm<ProjectFormData>({
     resolver: zodResolver(projectSchema),
@@ -51,11 +54,18 @@ export function CreateProjectDialog() {
   });
 
   const createProject = api.project.create.useMutation({
-    onSuccess: async () => {
+    onSuccess: async (newProject) => {
       // Close the dialog
       setOpen(false);
       // Reset the form
       form.reset();
+      // Clear any existing selected project first
+      clearSelectedProject();
+      // Then set the newly created project as selected
+      if (newProject) {
+        setSelectedProject(newProject);
+        toast.success(`Project "${newProject.name}" created successfully`);
+      }
       // Invalidate the projects query to trigger a refetch
       await utils.project.getAll.invalidate();
     },
