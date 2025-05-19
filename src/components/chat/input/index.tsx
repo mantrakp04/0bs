@@ -1,0 +1,59 @@
+import { AutosizeTextarea } from "@/components/ui/autosize-textarea";
+import { useQuery } from "convex-helpers/react/cache";
+import { api } from "../../../../convex/_generated/api";
+import { useParams } from "@tanstack/react-router";
+import type { Id } from "convex/_generated/dataModel";
+import { useMutation } from "convex/react";
+import { useDebouncedCallback } from "use-debounce";
+import { DocumentList } from "./document-list";
+import { Toolbar } from "./toolbar";
+
+export const ChatInput = () => {
+  const { chatId } = useParams({ from: "/chat_/$chatId/" });
+
+  const chatInput = useQuery(api.routes.chatInput.get, {
+    chatId: chatId as Id<"chats"> | "new",
+  });
+
+  const updateChatInput = useMutation(api.routes.chatInput.update);
+
+  const debouncedUpdate = useDebouncedCallback((value: string) => {
+    updateChatInput({
+      chatId: chatId as Id<"chats"> | "new",
+      updates: { text: value },
+    });
+  }, 500);
+
+  const handleRemoveDocument = (documentId: Id<"documents">) => {
+    if (!chatInput?.documents) return;
+    updateChatInput({
+      chatId: chatId as Id<"chats"> | "new",
+      updates: {
+        documents: chatInput.documents.filter((id) => id !== documentId),
+      },
+    });
+  };
+
+  return (
+    <div className="flex flex-col w-[calc(40svw-2rem)] items-center bg-muted rounded-lg">
+      {/* Document List (Shadcn Scroll Area) */}
+      <DocumentList
+        documentIds={chatInput?.documents}
+        onRemove={handleRemoveDocument}
+      />
+
+      {/* Input */}
+      <AutosizeTextarea
+        minHeight={40}
+        maxHeight={192}
+        className="resize-none bg-transparent ring-0 focus-visible:ring-0 focus-visible:ring-offset-0 border-none p-2"
+        defaultValue={chatInput?.text}
+        onChange={(e) => debouncedUpdate(e.target.value)}
+        placeholder="Type a message..."
+      />
+
+      {/* Toolbar */}
+      <Toolbar />
+    </div>
+  );
+};

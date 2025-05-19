@@ -1,0 +1,111 @@
+services:
+  backend:
+    image: ghcr.io/get-convex/convex-backend:e8d532c70292c89217e8669473bd024f6fe6c239
+    stop_grace_period: 10s
+    stop_signal: SIGINT
+    privileged: true
+    ports:
+      - "${PORT:-3210}:3210"
+      - "${SITE_PROXY_PORT:-3211}:3211"
+    volumes:
+      - data:/convex/data
+      - ../litellm_config.yaml:/convex/litellm_config.yaml
+      - /var/run/docker.sock:/var/run/docker.sock
+    environment:
+      - INSTANCE_NAME=${INSTANCE_NAME:-}
+      - INSTANCE_SECRET=${INSTANCE_SECRET:-}
+      - CONVEX_RELEASE_VERSION_DEV=${CONVEX_RELEASE_VERSION_DEV:-}
+      - ACTIONS_USER_TIMEOUT_SECS=${ACTIONS_USER_TIMEOUT_SECS:-}
+      - CONVEX_CLOUD_ORIGIN=http://127.0.0.1:${PORT:-3210}
+      - CONVEX_SITE_ORIGIN=http://127.0.0.1:${SITE_PROXY_PORT:-3211}
+      - DATABASE_URL=${DATABASE_URL:-}
+      - DISABLE_BEACON=${DISABLE_BEACON:-}
+      - REDACT_LOGS_TO_CLIENT=${REDACT_LOGS_TO_CLIENT:-}
+      - DO_NOT_REQUIRE_SSL=${DO_NOT_REQUIRE_SSL:-}
+      - POSTGRES_URL=${POSTGRES_URL:-}
+      - MYSQL_URL=${MYSQL_URL:-}
+      - RUST_LOG=${RUST_LOG:-info}
+      - RUST_BACKTRACE=${RUST_BACKTRACE:-}
+      - AWS_REGION=${AWS_REGION:-}
+      - AWS_ACCESS_KEY_ID=${AWS_ACCESS_KEY_ID:-}
+      - AWS_SECRET_ACCESS_KEY=${AWS_SECRET_ACCESS_KEY:-}
+      - AWS_SESSION_TOKEN=${AWS_SESSION_TOKEN:-}
+      - S3_STORAGE_EXPORTS_BUCKET=${S3_STORAGE_EXPORTS_BUCKET:-}
+      - S3_STORAGE_SNAPSHOT_IMPORTS_BUCKET=${S3_STORAGE_SNAPSHOT_IMPORTS_BUCKET:-}
+      - S3_STORAGE_MODULES_BUCKET=${S3_STORAGE_MODULES_BUCKET:-}
+      - S3_STORAGE_FILES_BUCKET=${S3_STORAGE_FILES_BUCKET:-}
+      - S3_STORAGE_SEARCH_BUCKET=${S3_STORAGE_SEARCH_BUCKET:-}
+      - S3_ENDPOINT_URL=${S3_ENDPOINT_URL:-}
+
+    healthcheck:
+      test: curl -f http://localhost:3210/version
+      interval: 5s
+      start_period: 10s
+
+  dashboard:
+    image: ghcr.io/get-convex/convex-dashboard:e8d532c70292c89217e8669473bd024f6fe6c239
+    stop_grace_period: 10s
+    stop_signal: SIGINT
+    ports:
+      - "${DASHBOARD_PORT:-6791}:6791"
+    environment:
+      - NEXT_PUBLIC_DEPLOYMENT_URL=http://127.0.0.1:${PORT:-3210}
+    depends_on:
+      backend:
+        condition: service_healthy
+
+  litellm:
+    image: ghcr.io/berriai/litellm:main-latest
+    ports:
+      - "4000:4000"
+    volumes:
+      - ../litellm_config.yaml:/app/config.yaml
+    env_file:
+      - ../.env.local
+    command:
+      ["--config", "/app/config.yaml", "--port", "4000", "--num_workers", "8"]
+
+  weaviate:
+    image: cr.weaviate.io/semitechnologies/weaviate:1.30.3
+    ports:
+      - 8080:8080
+      - 50051:50051
+    command:
+      - --host
+      - 0.0.0.0
+      - --port
+      - '8080'
+      - --scheme
+      - http
+    volumes:
+      - "data:/var/lib/weaviate"
+    restart: on-failure:0
+    environment:
+      QUERY_DEFAULTS_LIMIT: 25
+      AUTHENTICATION_ANONYMOUS_ACCESS_ENABLED: 'true'
+      PERSISTENCE_DATA_PATH: '/var/lib/weaviate'
+      ENABLE_API_BASED_MODULES: 'true'
+      CLUSTER_HOSTNAME: 'node1'
+
+  services:
+    build:
+      context: ..
+      dockerfile: docker/Docker-services
+    ports:
+      - "5001:5001"
+      - "5002:5002"
+    env_file:
+      - ../.env.local
+    depends_on:
+      - backend
+    deploy:
+      resources:
+        reservations:
+          devices:
+            - driver: nvidia
+              count: all
+              capabilities: [gpu]
+    runtime: nvidia
+
+volumes:
+  data:
