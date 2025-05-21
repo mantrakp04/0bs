@@ -20,6 +20,9 @@ interface ChatState {
   setDocumentDialogDocumentId: (
     documentId: Id<"documents"> | undefined,
   ) => void;
+
+  projectDialogOpen: boolean;
+  setProjectDialogOpen: (open: boolean) => void;
 }
 
 export const useChat = create<ChatState>((set) => ({
@@ -38,4 +41,7 @@ export const useChat = create<ChatState>((set) => ({
   documentDialogDocumentId: undefined,
   setDocumentDialogDocumentId: (documentId) =>
     set({ documentDialogDocumentId: documentId }),
+
+  projectDialogOpen: false,
+  setProjectDialogOpen: (open) => set({ projectDialogOpen: open }),
 }));

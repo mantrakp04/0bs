@@ -7,6 +7,7 @@ import { Loader } from "lucide-react";
 import { SidebarProvider, SidebarTrigger } from "@/components/ui/sidebar";
 import { AppSidebar } from "@/components/app-sidebar";
 import { DocumentDialog } from "@/components/document-dialog";
+import { ProjectDialog } from "@/components/project-dialog";
 
 export const Route = createRootRoute({
   component: () => {
@@ -37,6 +38,7 @@ export const Route = createRootRoute({
           </div>
           <Outlet />
           <DocumentDialog />
+          <ProjectDialog />
         </SidebarProvider>
         <Toaster />
         <TanStackRouterDevtools />

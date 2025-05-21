@@ -19,10 +19,10 @@ services:
       - CONVEX_CLOUD_ORIGIN=http://127.0.0.1:${PORT:-3210}
       - CONVEX_SITE_ORIGIN=http://127.0.0.1:${SITE_PROXY_PORT:-3211}
       - DATABASE_URL=${DATABASE_URL:-}
-      - DISABLE_BEACON=${DISABLE_BEACON:-}
+      - DISABLE_BEACON=${DISABLE_BEACON:-1}
       - REDACT_LOGS_TO_CLIENT=${REDACT_LOGS_TO_CLIENT:-}
-      - DO_NOT_REQUIRE_SSL=${DO_NOT_REQUIRE_SSL:-}
-      - POSTGRES_URL=${POSTGRES_URL:-}
+      - DO_NOT_REQUIRE_SSL=${DO_NOT_REQUIRE_SSL:-1}
+      - POSTGRES_URL=${POSTGRES_URL:-postgres://postgres:postgres@database:5432}
       - MYSQL_URL=${MYSQL_URL:-}
       - RUST_LOG=${RUST_LOG:-info}
       - RUST_BACKTRACE=${RUST_BACKTRACE:-}
@@ -41,6 +41,8 @@ services:
       test: curl -f http://localhost:3210/version
       interval: 5s
       start_period: 10s
+    depends_on:
+      - database
 
   dashboard:
     image: ghcr.io/get-convex/convex-dashboard:e8d532c70292c89217e8669473bd024f6fe6c239
@@ -64,6 +66,17 @@ services:
       - ../.env.local
     command:
       ["--config", "/app/config.yaml", "--port", "4000", "--num_workers", "8"]
+
+  database:
+    image: postgres:latest
+    ports:
+      - 5432:5432
+    environment:
+      POSTGRES_USER: postgres
+      POSTGRES_PASSWORD: postgres
+      POSTGRES_DB: convex_self_hosted
+    volumes:
+      - data:/var/lib/postgresql/data
 
   weaviate:
     image: cr.weaviate.io/semitechnologies/weaviate:1.30.3
@@ -96,8 +109,6 @@ services:
       - "5002:5002"
     env_file:
       - ../.env.local
-    depends_on:
-      - backend
     deploy:
       resources:
         reservations:

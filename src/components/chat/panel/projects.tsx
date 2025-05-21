@@ -82,7 +82,7 @@ const ProjectDocument = ({ projectDocument }: ProjectDocumentProps) => {
 };
 
 export const ProjectsPanel = () => {
-  const { selectedProjectId, setSelectedProjectId } = useChat();
+  const { selectedProjectId, setSelectedProjectId, setProjectDialogOpen } = useChat();
   const generateUploadUrl = useMutation(api.routes.documents.generateUploadUrl);
   const updateProject = useMutation(api.routes.projects.update);
   const addDocumentToProject = useAction(api.actions.projectDocuments.add);
@@ -236,52 +236,58 @@ export const ProjectsPanel = () => {
 
   if (!project) {
     return (
-      <div className="h-[calc(100vh-4rem)] px-4 space-y-4">
+      <div className="flex flex-col gap-2 h-full px-2 pt-2">
+        <div className="flex items-center text-center justify-between">
+          <h2 className="text-2xl font-bold">Select a Project</h2>
+          <Button variant="outline" size="sm" onClick={() => setProjectDialogOpen(true)}>
+            <PlusIcon className="size-4" />
+            New Project
+          </Button>
+        </div>
         <ScrollArea className="h-[400px]">
-          <div className="space-y-2">
-            <h2 className="text-2xl font-bold">Select a Project</h2>
-            {allProjects?.page.map((project) => (
-              <Card
-                key={project._id}
-                className="p-4 cursor-pointer hover:bg-accent transition-colors"
-                onClick={() => setSelectedProjectId(project._id)}
-              >
-                <div className="flex items-center justify-between">
-                  <h3 className="font-medium">{project.name}</h3>
-                  {project.description && (
-                    <p className="text-sm text-muted-foreground">
-                      {project.description}
-                    </p>
-                  )}
-                </div>
-              </Card>
-            ))}
-          </div>
+          {allProjects?.page.map((project) => (
+            <Card
+              key={project._id}
+              className="mb-2 p-4 cursor-pointer hover:bg-accent transition-colors"
+              onClick={() => setSelectedProjectId(project._id)}
+            >
+              <div className="flex items-center justify-between">
+                <h3 className="font-medium">{project.name}</h3>
+                {project.description && (
+                  <p className="text-sm text-muted-foreground">
+                    {project.description}
+                  </p>
+                )}
+              </div>
+            </Card>
+          ))}
         </ScrollArea>
       </div>
     );
   }
 
   return (
-    <div className="h-[calc(100vh-4rem)] px-4 space-y-4">
-      <div className="flex items-center justify-between">
-        <h2 className="text-2xl font-bold">{project.name}</h2>
-        <Button
-          variant="ghost"
-          size="icon"
-          onClick={() =>
-            setSelectedProjectId(undefined as unknown as Id<"projects">)
-          }
-          className="h-8 w-8"
-        >
-          <XIcon className="size-4" />
-        </Button>
+    <div className="flex flex-col gap-2 h-full px-2 pt-2">
+      <div className="flex flex-col gap-0">
+        <div className="flex items-center justify-between">
+          <h2 className="text-2xl font-bold translate-y-[-0.1rem]">{project.name}</h2>
+          <Button
+            variant="ghost"
+            size="icon"
+            onClick={() =>
+              setSelectedProjectId(undefined as unknown as Id<"projects">)
+            }
+            className="h-8 w-8"
+          >
+            <XIcon className="size-4" />
+          </Button>
+        </div>
+        {project.description && (
+          <p className="text-muted-foreground/80">{project.description}</p>
+        )}
       </div>
-      {project.description && (
-        <p className="text-muted-foreground mt-2">{project.description}</p>
-      )}
 
-      <div className="space-y-2">
+      <div className="flex flex-col gap-2">
         <h3 className="text-lg font-semibold">System Prompt</h3>
         <AutosizeTextarea
           defaultValue={project.systemPrompt}

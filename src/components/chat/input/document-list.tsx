@@ -41,33 +41,31 @@ export const DocumentList = ({
   };
 
   return (
-    <ScrollArea className="w-full max-h-24 px-2">
-      <div className="flex flex-wrap gap-2 py-2">
-        {documents.map((doc) => (
-          <Badge
-            key={doc._id}
-            variant="secondary"
-            className="flex items-center gap-1.5 pr-1"
-            onClick={() => handlePreview(doc._id)}
-          >
-            {getIcon(doc.type)}
-            <span className="max-w-32 truncate\">{doc.name}</span>
-            {onRemove && (
-              <Button
-                variant="ghost"
-                size="icon"
-                className="h-4 w-4 p-0.5 hover:bg-muted-foreground/20"
-                onClick={(e) => {
-                  e.stopPropagation();
-                  onRemove(doc._id);
-                }}
-              >
-                <XIcon className="w-3 h-3" />
-              </Button>
-            )}
-          </Badge>
-        ))}
-      </div>
+    <ScrollArea className="w-full max-h-24 px-1 pt-1">
+      {documents.map((doc) => (
+        <Badge
+          key={doc._id}
+          variant="secondary"
+          className="flex items-center gap-1.5 pr-1"
+          onClick={() => handlePreview(doc._id)}
+        >
+          {getIcon(doc.type)}
+          <span className="max-w-32 truncate\">{doc.name}</span>
+          {onRemove && (
+            <Button
+              variant="ghost"
+              size="icon"
+              className="h-4 w-4 p-0.5 hover:bg-muted-foreground/20"
+              onClick={(e) => {
+                e.stopPropagation();
+                onRemove(doc._id);
+              }}
+            >
+              <XIcon className="w-3 h-3" />
+            </Button>
+          )}
+        </Badge>
+      ))}
     </ScrollArea>
   );
 };

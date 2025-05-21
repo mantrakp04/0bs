@@ -26,6 +26,9 @@ export const { auth, signIn, signOut, store, isAuthenticated } = convexAuth({
         chatId: "new",
         userId: args.userId,
         updatedAt: Date.now(),
+        agentMode: false,
+        smortMode: false,
+        webSearch: false,
       });
     },
   },

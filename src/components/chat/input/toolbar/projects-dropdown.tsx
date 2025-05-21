@@ -20,6 +20,7 @@ import { api } from "../../../../../convex/_generated/api";
 import { useState } from "react";
 import { FoldersIcon, PlusIcon } from "lucide-react";
 import { useChat } from "@/store/use-chat";
+
 export const ProjectsDropdown = () => {
   const [newProjectOpen, setNewProjectOpen] = useState(false);
   const [name, setName] = useState("");
@@ -29,7 +30,7 @@ export const ProjectsDropdown = () => {
     paginationOpts: { numItems: 3, cursor: null },
   });
   const createProject = useMutation(api.routes.projects.create);
-  const { setSelectedProjectId, setResizablePanelsOpen, setResizablePanelTab } =
+  const { setSelectedProjectId, setResizablePanelsOpen, setResizablePanelTab, setProjectDialogOpen } =
     useChat();
 
   const handleCreateProject = async () => {
@@ -41,71 +42,35 @@ export const ProjectsDropdown = () => {
   };
 
   return (
-    <>
-      <DropdownMenuSub>
-        <DropdownMenuSubTrigger className="flex items-center gap-2">
-          <FoldersIcon className="w-4 h-4" />
-          Projects
-        </DropdownMenuSubTrigger>
-        <DropdownMenuSubContent className="ml-2">
-          {projects?.page.slice(0, 3).map((project) => (
-            <DropdownMenuItem
-              key={project._id}
-              onSelect={() => {
-                setSelectedProjectId(project._id);
-                setResizablePanelTab("projects");
-                setResizablePanelsOpen(true);
-              }}
-            >
-              {project.name}
-            </DropdownMenuItem>
-          ))}
-          <DropdownMenuSeparator />
+    <DropdownMenuSub>
+      <DropdownMenuSubTrigger className="flex items-center gap-2">
+        <FoldersIcon className="w-4 h-4" />
+        Projects
+      </DropdownMenuSubTrigger>
+      <DropdownMenuSubContent className="ml-2">
+        {projects?.page.slice(0, 3).map((project) => (
           <DropdownMenuItem
-            onSelect={(e) => {
-              e.preventDefault();
-              setNewProjectOpen(true);
+            key={project._id}
+            onSelect={() => {
+              setSelectedProjectId(project._id);
+              setResizablePanelTab("projects");
+              setResizablePanelsOpen(true);
             }}
           >
-            <PlusIcon className="w-4 h-4" />
-            Add New Project
+            {project.name}
           </DropdownMenuItem>
-        </DropdownMenuSubContent>
-      </DropdownMenuSub>
-
-      <Dialog open={newProjectOpen} onOpenChange={setNewProjectOpen}>
-        <DialogContent>
-          <DialogHeader>
-            <DialogTitle>Create New Project</DialogTitle>
-          </DialogHeader>
-          <div className="space-y-4 py-4">
-            <div className="space-y-2">
-              <label htmlFor="name">Name</label>
-              <Input
-                id="name"
-                value={name}
-                onChange={(e) => setName(e.target.value)}
-                placeholder="Project name"
-              />
-            </div>
-            <div className="space-y-2">
-              <label htmlFor="description">Description (Optional)</label>
-              <Textarea
-                id="description"
-                value={description}
-                onChange={(e) => setDescription(e.target.value)}
-                placeholder="Project description"
-              />
-            </div>
-          </div>
-          <DialogFooter>
-            <Button variant="outline" onClick={() => setNewProjectOpen(false)}>
-              Cancel
-            </Button>
-            <Button onClick={handleCreateProject}>Create</Button>
-          </DialogFooter>
-        </DialogContent>
-      </Dialog>
-    </>
+        ))}
+        <DropdownMenuSeparator />
+        <DropdownMenuItem
+          onSelect={(e) => {
+            e.preventDefault();
+            setProjectDialogOpen(true);
+          }}
+        >
+          <PlusIcon className="w-4 h-4" />
+          Add New Project
+        </DropdownMenuItem>
+      </DropdownMenuSubContent>
+    </DropdownMenuSub>
   );
 };

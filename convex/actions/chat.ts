@@ -1,7 +1,7 @@
 "use node";
 
 import { v } from "convex/values";
-import { action } from "../_generated/server";
+import { action, internalAction } from "../_generated/server";
 import { api } from "convex/_generated/api";
 import { HumanMessage } from "@langchain/core/messages";
 import { agentGraph } from "../langchain/agent";
@@ -9,7 +9,7 @@ import mime from "mime";
 import type { Doc, Id } from "../_generated/dataModel";
 import { Document } from "langchain/document";
 import type { StreamEvent } from "@langchain/core/tracers/log_stream";
-import { persistentTextStreaming } from "../utils/helpers";
+import { requireAuth } from "../utils/helpers";
 
 function isMimeTypeSupported(mimeType: string, tags: string[]) {
   const mimeToTag: Record<string, string> = {
@@ -28,7 +28,7 @@ function isMimeTypeSupported(mimeType: string, tags: string[]) {
   return false;
 }
 
-export const chat = action({
+export const chat = internalAction({
   args: {
     chatId: v.id("chats"),
   },
@@ -36,18 +36,12 @@ export const chat = action({
     ctx,
     args,
   ): AsyncGenerator<StreamEvent, void, unknown> {
-    const streamId = await persistentTextStreaming.createStream(ctx);
-    const chat = await ctx.runQuery(api.routes.chats.get, {
+    await ctx.runQuery(api.routes.chats.get, {
       chatId: args.chatId,
     });
+    throw new Error("hi")
     const chatInput = await ctx.runQuery(api.routes.chatInput.get, {
       chatId: args.chatId,
-    });
-    await ctx.runMutation(api.routes.chatInput.update, {
-      chatId: args.chatId,
-      updates: {
-        streamId: streamId,
-      },
     });
     const modelResult = await ctx.runAction(api.actions.models.getModel, {
       chatId: args.chatId,
@@ -55,6 +49,7 @@ export const chat = action({
     const selectedModel = modelResult.config.model_list.find(
       (model) => model.model_name === modelResult.selectedModel,
     );
+
 
     if (!selectedModel) {
       throw new Error("Selected model not found");
@@ -78,7 +73,7 @@ export const chat = action({
           })
           .filter((document) => {
             if (
-              isMimeTypeSupported(document.mimeType, selectedModel.tags ?? [])
+              isMimeTypeSupported(document.mimeType, selectedModel?.tags ?? [])
             ) {
               return true;
             }
@@ -161,7 +156,7 @@ export const chat = action({
         version: "v2",
         configurable: {
           ctx,
-          model: selectedModel.litellm_params.model,
+          model: selectedModel?.litellm_params.model ?? "",
           agentMode: chatInput.agentMode ?? false,
           smortMode: chatInput.smortMode ?? false,
           webSearch: chatInput.webSearch ?? true,
@@ -175,5 +170,38 @@ export const chat = action({
     for await (const event of response) {
       yield event;
     }
+  },
+});
+
+export const messages = action({
+  args: {
+    chatId: v.id("chats"),
+    replay: v.optional(v.boolean()),
+  },
+  handler: async (ctx, args) => {
+    await requireAuth(ctx);
+
+    const chat = await ctx.runQuery(api.routes.chats.get, {
+      chatId: args.chatId,
+    });
+    if (!chat) {
+      throw new Error("Chat not found");
+    }
+
+    if (args.replay) {
+      const state = await agentGraph.getStateHistory({
+        configurable: {
+          threadId: args.chatId,
+        },
+      });
+      return state;
+    }
+
+    const state = await agentGraph.getState({
+      configurable: {
+        threadId: args.chatId,
+      },
+    });
+    return state;
   },
 });

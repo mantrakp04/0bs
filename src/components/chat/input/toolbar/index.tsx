@@ -9,7 +9,6 @@ import {
   BotIcon,
   ChevronUpIcon,
   GithubIcon,
-  HammerIcon,
   PanelRightCloseIcon,
   PanelRightOpenIcon,
   PaperclipIcon,
@@ -42,7 +41,6 @@ import { toast } from "sonner";
 import {
   Tooltip,
   TooltipContent,
-  TooltipProvider,
   TooltipTrigger,
 } from "@/components/ui/tooltip"
 
@@ -85,9 +83,10 @@ export const Toolbar = () => {
   );
   const createDocumentMutation = useMutation(api.routes.documents.create);
   const getModelAction = useAction(api.actions.models.getModel);
-  const [getModelResult, setGetModelResult] = useState<GetModelResult | null>(
-    null,
-  );
+  const createChatMutation = useMutation(api.routes.chats.create);
+  const createChatInputMutation = useMutation(api.routes.chatInput.create);
+  const sendMutation = useMutation(api.routes.chats.send);
+  const [getModelResult, setGetModelResult] = useState<GetModelResult | null>(null);
 
   useEffect(() => {
     const fetchModel = async () => {
@@ -97,17 +96,16 @@ export const Toolbar = () => {
       setGetModelResult(result);
     };
     fetchModel();
-  }, [chatId, getModelAction]); // Only re-run when chatId or action changes
+  }, [chatId, getModelAction]);
 
   const handleSubmit = async () => {
-    const createChat = useMutation(api.routes.chats.create);
-    const createChatInput = useMutation(api.routes.chatInput.create);
+    let toChatId: Id<"chats">;
     if (params.chatId === "new") {
-      const newChatId = await createChat({
+      const newChatId = await createChatMutation({
         name: "New Chat",
       });
-      await createChatInput({
-        chatId,
+      await createChatInputMutation({
+        chatId: newChatId,
         text: chatInput?.text,
         documents: chatInput?.documents,
         model: chatInput?.model,
@@ -116,8 +114,15 @@ export const Toolbar = () => {
         webSearch: chatInput?.webSearch,
         projectId: chatInput?.projectId,
       });
-      navigate({ to: "/chat/$chatId", params: { chatId: newChatId } });
+      toChatId = newChatId;
+      await navigate({ to: "/chat/$chatId", params: { chatId: newChatId } });
+    } else {
+      toChatId = params.chatId as Id<"chats">;
     }
+    const streamId = await sendMutation({
+      chatId: toChatId,
+    });
+    console.log(streamId);
   };
 
   const handleFileUpload = async (files: FileList) => {
@@ -200,19 +205,40 @@ export const Toolbar = () => {
           </DropdownMenuContent>
         </DropdownMenu>
 
-        <Toggle variant="outline" className="bg-input/30">
+        <Toggle variant="outline" className="bg-input/30" pressed={chatInput?.agentMode} onPressedChange={() => {
+          updateChatInputMutation({
+            chatId,
+            updates: {
+              agentMode: !chatInput?.agentMode,
+            },
+          });
+        }}>
           <BotIcon className="h-4 w-4" />
           Agent
         </Toggle>
 
-        <Toggle variant="outline" className="bg-input/30">
+        <Toggle variant="outline" className="bg-input/30" pressed={chatInput?.smortMode} onPressedChange={() => {
+          updateChatInputMutation({
+            chatId,
+            updates: {
+              smortMode: !chatInput?.smortMode,
+            },
+          });
+        }}>
           <BrainIcon className="h-4 w-4" />
           Smort
         </Toggle>
 
         <Tooltip delayDuration={300}>
-          <TooltipTrigger>
-            <Toggle variant="outline" className="bg-input/30">
+          <TooltipTrigger asChild>
+            <Toggle variant="outline" className="bg-input/30" pressed={chatInput?.webSearch} onPressedChange={() => {
+              updateChatInputMutation({
+                chatId,
+                updates: {
+                  webSearch: !chatInput?.webSearch,
+                },
+              });
+            }}>
               <Globe2Icon className="h-4 w-4" />
             </Toggle>
           </TooltipTrigger>
@@ -245,7 +271,7 @@ export const Toolbar = () => {
             })
           }
         >
-          <SelectTrigger>{chatInput?.model}</SelectTrigger>
+          <SelectTrigger>{getModelResult?.selectedModel}</SelectTrigger>
           <SelectContent>
             {getModelResult?.config?.model_list.map((model) => (
               <SelectItem
@@ -277,7 +303,7 @@ export const Toolbar = () => {
           </SelectContent>
         </Select>
 
-        <Button variant="ghost" size="icon">
+        <Button variant="ghost" size="icon" onClick={async () => await handleSubmit()}>
           <ChevronUpIcon className="h-4 w-4" />
         </Button>
       </div>

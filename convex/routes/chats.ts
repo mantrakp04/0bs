@@ -1,7 +1,9 @@
 import { query, mutation } from "../_generated/server";
 import { v } from "convex/values";
-import { requireAuth } from "../utils/helpers";
+import { persistentTextStreaming, requireAuth } from "../utils/helpers";
 import { paginationOptsValidator } from "convex/server";
+import { type StreamId, StreamIdValidator } from "@convex-dev/persistent-text-streaming";
+import { api } from "convex/_generated/api";
 
 export const get = query({
   args: {
@@ -139,5 +141,35 @@ export const remove = mutation({
     await ctx.db.delete(args.chatId);
 
     return null;
+  },
+});
+
+export const send = mutation({
+  args: {
+    chatId: v.id("chats"),
+  },
+  handler: async (ctx, args) => {
+    await requireAuth(ctx);
+
+    const streamId = await persistentTextStreaming.createStream(ctx);
+    await ctx.runMutation(api.routes.chatInput.update, {
+      chatId: args.chatId,
+        updates: {
+          streamId: streamId,
+        },
+      });
+
+    return streamId;
+  },
+});
+
+export const getChatBody = query({
+  args: {
+    streamId: StreamIdValidator,
+  },
+  handler: async (ctx, args) => {
+    await requireAuth(ctx);
+
+    return await persistentTextStreaming.getStreamBody(ctx, args.streamId as StreamId);
   },
 });

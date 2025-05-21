@@ -47,12 +47,10 @@ export const add = action({
       ).then(async (res) => await res.text());
     } else if (storageDoc.type === "url") {
       const res = await fetch(
-        "http://services:5002/crawl/?url=" + docUrl + "&max_depth=0",
+        "http://services:5002/crawl/?url=" + encodeURIComponent(docUrl) + "&max_depth=0",
       );
-      const data = (await res.json()) as { url: string; markdown: string }[];
-      pageContent = data
-        .map((data) => `# ${data.url}\n\n${data.markdown}`)
-        .join("\n\n");
+      const data = (await res.json()) as { url: string; markdown: string };
+      pageContent = `# ${data.url}\n\n${data.markdown}`;
     } else if (storageDoc.type === "youtube") {
       const loader = YoutubeLoader.createFromUrl(docUrl, {
         language: "en",
@@ -62,7 +60,7 @@ export const add = action({
       pageContent = docs.map((doc) => doc.pageContent).join("\n\n");
     } else if (storageDoc.type === "site") {
       const res = await fetch(
-        "http://services:5002/crawl/?url=" + docUrl + "&max_depth=2",
+        "http://services:5002/crawl/?url=" + encodeURIComponent(docUrl) + "&max_depth=2",
       );
       const data = (await res.json()) as { url: string; markdown: string }[];
       pageContent = data

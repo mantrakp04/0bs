@@ -29,7 +29,7 @@ export const DocumentDialog = () => {
   );
 
   const generateDownloadUrl = useMutation(
-    api.routes.storage.generateDownloadUrl,
+    api.routes.documents.generateDownloadUrl,
   );
 
   useEffect(() => {

@@ -36,7 +36,8 @@ export const start = action({
       // Container exists and is running, just update URL
       const ci = await docker.getContainer(container.Id).inspect();
       sseUrl = `http://localhost:${ci.HostConfig.PortBindings["8000/tcp"][0].HostPort}/sse`;
-    } else if (!sseUrl) {
+    }
+    if (!sseUrl) {
       // Create a new container
       const newContainer = await docker.createContainer({
         name: mcp._id,

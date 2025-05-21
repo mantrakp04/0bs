@@ -1,6 +1,6 @@
 "use node";
 
-import { getModel } from "../models";
+import { getModel } from "./models";
 import {
   Annotation,
   END,
@@ -24,17 +24,20 @@ import { z } from "zod";
 import type { Id } from "convex/_generated/dataModel";
 import { api } from "convex/_generated/api";
 import { Document } from "langchain/document";
-import { getVectorStore } from "../weaviate";
+import { getVectorStore } from "./weaviate";
 import type { TavilySearchResponse } from "@langchain/tavily";
 import { formatDocumentsAsString } from "langchain/util/document";
-import { getSearchTools } from "../get_serch_tool";
-import { getMCPTools } from "../get_mcp_tools";
+import { getSearchTools } from "./get_serch_tool";
+import { getMCPTools } from "./get_mcp_tools";
 import { createSupervisor } from "@langchain/langgraph-supervisor";
 import { createReactAgent } from "@langchain/langgraph/prebuilt";
 import { AIMessage } from "@langchain/core/messages";
-import { ConvexSaver } from "../checkpointer";
+import { PostgresSaver } from "@langchain/langgraph-checkpoint-postgres";
 
-const checkpointer = new ConvexSaver();
+const checkpointer = PostgresSaver.fromConnString(
+  "postgresql://postgres:postgres@database:5432",
+);
+await checkpointer.setup();
 
 // Extend RunnableConfig to include ctx
 type ExtendedRunnableConfig = RunnableConfig & {
