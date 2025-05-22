@@ -91,15 +91,16 @@ export const getAll = query({
       throw new Error("Documents not found");
     }
 
+    const documentsMap = new Map<Id<"documents">, Doc<"documents">>();
+    documents.forEach((document) => documentsMap.set(document._id, document));
+
     const projectDocumentsMap = new Map<
       Id<"projectDocuments">,
       Doc<"projectDocuments"> & { document: Doc<"documents"> }
     >();
-    const documentMap = new Map<Id<"documents">, Doc<"documents">>();
-    documents.forEach((document) => documentMap.set(document._id, document));
 
     projectDocuments.page.forEach((projectDocument) => {
-      const document = documentMap.get(projectDocument.documentId);
+      const document = documentsMap.get(projectDocument.documentId);
       if (!document) {
         throw new Error("Document not found");
       }
@@ -264,5 +265,23 @@ export const toggleSelect = mutation({
     );
 
     return true;
+  },
+});
+
+export const getSelected = query({
+  args: {
+    projectId: v.id("projects"),
+    selected: v.boolean(),
+  },
+  handler: async (ctx, args) => {
+    await requireAuth(ctx);
+
+    const projectDocuments = await ctx.db
+      .query("projectDocuments")
+      .withIndex("by_project", (q) => q.eq("projectId", args.projectId))
+      .filter((q) => q.eq(q.field("selected"), args.selected))
+      .collect();
+
+    return projectDocuments.map((projectDocument) => projectDocument._id);
   },
 });

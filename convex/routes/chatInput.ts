@@ -1,9 +1,6 @@
-import { query, mutation, internalQuery } from "../_generated/server";
+import { query, mutation } from "../_generated/server";
 import { v } from "convex/values";
 import { requireAuth } from "../utils/helpers";
-import { StreamIdValidator } from "@convex-dev/persistent-text-streaming";
-import { api } from "convex/_generated/api";
-import type { Doc, Id } from "convex/_generated/dataModel";
 
 export const get = query({
   args: {
@@ -40,48 +37,11 @@ export const get = query({
   },
 });
 
-export const getByStreamId = internalQuery({
-  args: {
-    streamId: StreamIdValidator,
-  },
-  handler: async (ctx, args): Promise<{
-    chatInput: Doc<"chatInput">;
-    chat: Doc<"chats">;
-  }> => {
-    const chatInput = await ctx.db
-      .query("chatInput")
-      .withIndex("by_stream", (q) =>
-        q.eq("streamId", args.streamId),
-      )
-      .first();
-
-    if (!chatInput) {
-      throw new Error("Chat input not found");
-    }
-
-    const chat = await ctx.db
-      .query("chats")
-      .withIndex("by_user", (q) => q.eq("userId", chatInput.userId))
-      .filter((q) => q.eq(q.field("_id"), chatInput.chatId))
-      .first();
-
-    if (!chat) {
-      throw new Error("Chat not found");
-    }
-
-    return {
-      chatInput,
-      chat,
-    };
-  },
-});
-
 export const create = mutation({
   args: {
     chatId: v.union(v.id("chats"), v.literal("new")),
     documents: v.optional(v.array(v.id("documents"))),
     text: v.optional(v.string()),
-    streamId: v.optional(StreamIdValidator),
     projectId: v.optional(v.id("projects")),
     model: v.optional(v.string()),
     agentMode: v.optional(v.boolean()),
@@ -119,7 +79,6 @@ export const create = mutation({
       userId,
       documents: args.documents,
       text: args.text,
-      streamId: args.streamId,
       projectId: args.projectId,
       model: args.model,
       agentMode: args.agentMode,
@@ -146,7 +105,6 @@ export const update = mutation({
     updates: v.object({
       documents: v.optional(v.array(v.id("documents"))),
       text: v.optional(v.string()),
-      streamId: v.optional(StreamIdValidator),
       projectId: v.optional(v.id("projects")),
       model: v.optional(v.string()),
       agentMode: v.optional(v.boolean()),

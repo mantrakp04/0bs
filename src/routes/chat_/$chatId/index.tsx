@@ -18,7 +18,7 @@ function RouteComponent() {
 
   return (
     <ResizablePanelGroup direction="horizontal">
-      <ResizablePanel className="flex flex-col h-full items-center justify-center py-2">
+      <ResizablePanel className="flex flex-col h-full py-2 gap-2">
         <ChatMessages />
         <ChatInput />
       </ResizablePanel>

@@ -3,8 +3,8 @@
   "private": true,
   "type": "module",
   "scripts": {
-    "dev:backend": "npx convex dev",
-    "dev": "vite --port 3000 & npx convex dev",
+    "b": "npx convex dev",
+    "dev": "vite --port 3000",
     "start": "vite --port 3000",
     "d:up": "docker-compose -f docker/docker-compose.yml up -d",
     "d:down": "docker-compose -f docker/docker-compose.yml down",

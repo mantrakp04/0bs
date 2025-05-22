@@ -1,9 +1,8 @@
-import { query, mutation } from "../_generated/server";
+import { query, mutation, action } from "../_generated/server";
 import { v } from "convex/values";
-import { persistentTextStreaming, requireAuth } from "../utils/helpers";
+import { requireAuth } from "../utils/helpers";
 import { paginationOptsValidator } from "convex/server";
-import { type StreamId, StreamIdValidator } from "@convex-dev/persistent-text-streaming";
-import { api } from "convex/_generated/api";
+import { api, internal } from "convex/_generated/api";
 
 export const get = query({
   args: {
@@ -144,32 +143,35 @@ export const remove = mutation({
   },
 });
 
-export const send = mutation({
+export const send = action({
   args: {
     chatId: v.id("chats"),
   },
   handler: async (ctx, args) => {
     await requireAuth(ctx);
 
-    const streamId = await persistentTextStreaming.createStream(ctx);
-    await ctx.runMutation(api.routes.chatInput.update, {
+    const chatInput = await ctx.runQuery(api.routes.chatInput.get, {
       chatId: args.chatId,
-        updates: {
-          streamId: streamId,
-        },
-      });
+    });
 
-    return streamId;
-  },
-});
+    if (!chatInput.text || !chatInput.model) {
+      throw new Error("Chat input not found\n" + JSON.stringify(chatInput));
+    }
 
-export const getChatBody = query({
-  args: {
-    streamId: StreamIdValidator,
-  },
-  handler: async (ctx, args) => {
-    await requireAuth(ctx);
+    await ctx.runAction(internal.langchain.index.chat, {
+      chatId: args.chatId,
+      text: chatInput.text,
+      model: chatInput.model,
+      agentMode: chatInput.agentMode,
+      smortMode: chatInput.smortMode,
+      webSearch: chatInput.webSearch,
+      projectId: chatInput.projectId,
+      excludeDocumentIds: chatInput.projectId ? await ctx.runQuery(api.routes.projectDocuments.getSelected, {
+        projectId: chatInput.projectId,
+        selected: false,
+      }) : undefined,
+    });
 
-    return await persistentTextStreaming.getStreamBody(ctx, args.streamId as StreamId);
+    return null;
   },
 });

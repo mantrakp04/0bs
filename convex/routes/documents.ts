@@ -100,7 +100,6 @@ export const create = mutation({
       v.literal("file"),
       v.literal("url"),
       v.literal("site"),
-      v.id("documents"),
       v.literal("youtube"),
     ),
     size: v.number(),

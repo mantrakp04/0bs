@@ -1,32 +1,26 @@
-import { useStream } from "../../../lib/stream_helper";
 import { api } from "../../../../convex/_generated/api";
 import { useQuery } from "convex/react";
 import { useParams } from "@tanstack/react-router";
 import type { Id } from "../../../../convex/_generated/dataModel";
-import type { StreamId } from "@convex-dev/persistent-text-streaming";
-import { useAuthToken } from "@convex-dev/auth/react";
+import { ScrollArea } from "@/components/ui/scroll-area";
 
 export const ChatMessages = () => {
   const params = useParams({ from: "/chat_/$chatId/" });
-  const chatInput = useQuery(api.routes.chatInput.get, {
+  const chatStream = useQuery(api.routes.chatStream.get, {
     chatId: params.chatId as Id<"chats">,
   });
-  const token = useAuthToken() ?? undefined;
-  const { text, status } = useStream(
-    api.routes.chats.getChatBody,
-    new URL(`${import.meta.env.VITE_CONVEX_API_URL}/chat`),
-    true,
-    chatInput?.streamId as StreamId,
-    token
-  );
 
   return (
-    <div className="flex flex-col h-full w-full items-center">
-      <h1>Chat Messages</h1>
-      {status}
-      <div className="flex flex-col h-full w-full items-center">
-        {text}
+    <ScrollArea className="flex-1 overflow-hidden">
+      <div className="flex flex-col max-w-4xl mx-auto">
+        {chatStream?.stream && (
+          <div className="flex flex-col space-y-2">
+            <div className="text-md break-words whitespace-pre-wrap w-full overflow-hidden">
+              {chatStream.stream}
+            </div>
+          </div>
+        )}
       </div>
-    </div>
+    </ScrollArea>
   );
 };

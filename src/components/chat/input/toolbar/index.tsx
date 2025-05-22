@@ -85,7 +85,7 @@ export const Toolbar = () => {
   const getModelAction = useAction(api.actions.models.getModel);
   const createChatMutation = useMutation(api.routes.chats.create);
   const createChatInputMutation = useMutation(api.routes.chatInput.create);
-  const sendMutation = useMutation(api.routes.chats.send);
+  const sendAction = useAction(api.routes.chats.send);
   const [getModelResult, setGetModelResult] = useState<GetModelResult | null>(null);
 
   useEffect(() => {
@@ -108,7 +108,7 @@ export const Toolbar = () => {
         chatId: newChatId,
         text: chatInput?.text,
         documents: chatInput?.documents,
-        model: chatInput?.model,
+        model: getModelResult?.selectedModel ?? "",
         agentMode: chatInput?.agentMode,
         smortMode: chatInput?.smortMode,
         webSearch: chatInput?.webSearch,
@@ -119,10 +119,9 @@ export const Toolbar = () => {
     } else {
       toChatId = params.chatId as Id<"chats">;
     }
-    const streamId = await sendMutation({
+    await sendAction({
       chatId: toChatId,
     });
-    console.log(streamId);
   };
 
   const handleFileUpload = async (files: FileList) => {

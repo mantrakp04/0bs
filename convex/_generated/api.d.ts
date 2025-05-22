@@ -8,20 +8,20 @@
  * @module
  */
 
-import type * as actions_chat from "../actions/chat.js";
 import type * as actions_mcps from "../actions/mcps.js";
 import type * as actions_models from "../actions/models.js";
 import type * as actions_projectDocuments from "../actions/projectDocuments.js";
 import type * as auth from "../auth.js";
 import type * as crons from "../crons.js";
-import type * as http_chat from "../http/chat.js";
 import type * as http from "../http.js";
 import type * as langchain_agent from "../langchain/agent.js";
 import type * as langchain_get_mcp_tools from "../langchain/get_mcp_tools.js";
 import type * as langchain_get_serch_tool from "../langchain/get_serch_tool.js";
+import type * as langchain_index from "../langchain/index.js";
 import type * as langchain_models from "../langchain/models.js";
 import type * as langchain_weaviate from "../langchain/weaviate.js";
 import type * as routes_chatInput from "../routes/chatInput.js";
+import type * as routes_chatStream from "../routes/chatStream.js";
 import type * as routes_chats from "../routes/chats.js";
 import type * as routes_documents from "../routes/documents.js";
 import type * as routes_mcps from "../routes/mcps.js";
@@ -44,20 +44,20 @@ import type {
  * ```
  */
 declare const fullApi: ApiFromModules<{
-  "actions/chat": typeof actions_chat;
   "actions/mcps": typeof actions_mcps;
   "actions/models": typeof actions_models;
   "actions/projectDocuments": typeof actions_projectDocuments;
   auth: typeof auth;
   crons: typeof crons;
-  "http/chat": typeof http_chat;
   http: typeof http;
   "langchain/agent": typeof langchain_agent;
   "langchain/get_mcp_tools": typeof langchain_get_mcp_tools;
   "langchain/get_serch_tool": typeof langchain_get_serch_tool;
+  "langchain/index": typeof langchain_index;
   "langchain/models": typeof langchain_models;
   "langchain/weaviate": typeof langchain_weaviate;
   "routes/chatInput": typeof routes_chatInput;
+  "routes/chatStream": typeof routes_chatStream;
   "routes/chats": typeof routes_chats;
   "routes/documents": typeof routes_documents;
   "routes/mcps": typeof routes_mcps;

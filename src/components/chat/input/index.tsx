@@ -35,7 +35,7 @@ export const ChatInput = () => {
   };
 
   return (
-    <div className="flex flex-col w-[calc(40svw-2rem)] items-center bg-muted rounded-lg">
+    <div className="flex flex-col w-4xl mx-auto items-center bg-muted rounded-lg">
       {/* Document List (Shadcn Scroll Area) */}
       <DocumentList
         documentIds={chatInput?.documents}

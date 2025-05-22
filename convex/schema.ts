@@ -1,7 +1,6 @@
 import { defineSchema, defineTable } from "convex/server";
 import { v } from "convex/values";
 import { authTables } from "@convex-dev/auth/server";
-import { StreamIdValidator } from "@convex-dev/persistent-text-streaming";
 
 export default defineSchema({
   ...authTables,
@@ -11,7 +10,6 @@ export default defineSchema({
       v.literal("file"),
       v.literal("url"),
       v.literal("site"),
-      v.id("documents"),
       v.literal("youtube"),
     ),
     size: v.number(),
@@ -33,17 +31,21 @@ export default defineSchema({
     userId: v.id("users"),
     documents: v.optional(v.array(v.id("documents"))),
     text: v.optional(v.string()),
-    streamId: v.optional(StreamIdValidator),
     projectId: v.optional(v.id("projects")),
-    model: v.optional(v.string()),
     agentMode: v.optional(v.boolean()),
     smortMode: v.optional(v.boolean()),
     webSearch: v.optional(v.boolean()),
     updatedAt: v.number(),
+    model: v.optional(v.string()),
   })
     .index("by_user", ["userId"])
-    .index("by_user_chat", ["chatId", "userId"])
-    .index("by_stream", ["streamId"]),
+    .index("by_user_chat", ["chatId", "userId"]),
+  chatStream: defineTable({
+    chatId: v.id("chats"),
+    status: v.union(v.literal("pending"), v.literal("streaming"), v.literal("done"), v.literal("error")),
+    stream: v.optional(v.string()),
+  })
+    .index("by_chat", ["chatId"]),
   projects: defineTable({
     name: v.string(),
     description: v.optional(v.string()),

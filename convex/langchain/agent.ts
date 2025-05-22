@@ -101,16 +101,18 @@ async function generateQuery(
   const modelWithOutputParser = promptTemplate.pipe(
     getModel(config.model).withStructuredOutput(
       z.object({
-        vectorStoreQueries: z.optional(
-          z
-            .array(z.string())
-            .describe("Queries for the vector database")
-            .max(3)
-            .min(1),
-        ),
-        webSearchQueries: z.optional(
-          z.array(z.string()).describe("Queries for web search").max(3).min(1),
-        ),
+        vectorStoreQueries: z
+          .array(z.string())
+          .describe("Queries for the vector database")
+          .max(3)
+          .min(1)
+          .nullable(),
+        webSearchQueries: z
+          .array(z.string())
+          .describe("Queries for web search")
+          .max(3)
+          .min(1)
+          .nullable(),
       }),
     ),
   );
@@ -127,7 +129,8 @@ async function retrieve(
   state: typeof GraphState.State,
   config: ExtendedRunnableConfig,
 ) {
-  const docNodeMap = new Map<string, DocumentInterface[]>();
+  const allDocs: DocumentInterface[] = [];
+  
   if (config.projectId && state.lastNode.vectorStoreQueries) {
     const vectorStore = getVectorStore();
     const excludedProjectDocuments = await config.ctx.runQuery(
@@ -156,15 +159,13 @@ async function retrieve(
             ],
           },
         });
-        docNodeMap.set(node, docs);
+        allDocs.push(...docs);
       }),
     );
-    return {
-      documents: docNodeMap,
-    };
   }
+  
   if (config.webSearch && state.lastNode.webSearchQueries) {
-    const searchTools = getSearchTools();
+    const searchTools = await getSearchTools();
     await Promise.all(
       state.lastNode.webSearchQueries.map(async (node: string) => {
         if (searchTools.tavily) {
@@ -176,17 +177,15 @@ async function retrieve(
             excludeDomains: [],
             searchDepth: "basic",
           })) as TavilySearchResponse;
-          docNodeMap.set(
-            node,
-            searchResults.results.map((result) => {
-              return new Document({
-                pageContent: `${result.score}. ${result.title}\n${result.url}\n${result.content}`,
-                metadata: {
-                  source: "tavily",
-                },
-              });
-            }),
-          );
+          const docs = searchResults.results.map((result) => {
+            return new Document({
+              pageContent: `${result.score}. ${result.title}\n${result.url}\n${result.content}`,
+              metadata: {
+                source: "tavily",
+              },
+            });
+          });
+          allDocs.push(...docs);
         } else {
           const searchResults = await searchTools.duckduckgo._call(node);
           const searchResultsArray: {
@@ -202,25 +201,21 @@ async function retrieve(
                 }) as Promise<string>,
             ),
           );
-          docNodeMap.set(
-            node,
-            searchResultsArray.map((result, index) => {
-              return new Document({
-                pageContent: `${result.title}\n${result.url}\n${urlMarkdownContents[index]}`,
-                metadata: {
-                  source: "duckduckgo",
-                },
-              });
-            }),
-          );
+          const docs = searchResultsArray.map((result, index) => {
+            return new Document({
+              pageContent: `${result.title}\n${result.url}\n${urlMarkdownContents[index]}`,
+              metadata: {
+                source: "duckduckgo",
+              },
+            });
+          });
+          allDocs.push(...docs);
         }
       }),
     );
-    return {
-      documents: docNodeMap,
-    };
   }
-  return { documents: docNodeMap };
+  
+  return { documents: allDocs };
 }
 
 async function gradeDocuments(
@@ -279,7 +274,10 @@ async function shouldPlan(
   state: typeof GraphState.State,
   options: Record<string, any>,
 ) {
-  const config = options as ExtendedRunnableConfig;
+  const config = {
+    ...options,
+    ...options.configurable,
+  } as ExtendedRunnableConfig;
   return config.smortMode ? "true" : "false";
 }
 
@@ -571,7 +569,12 @@ const wrapNodeFunction = <T extends Record<string, any>>(
     state: typeof GraphState.State,
     options: Record<string, any>,
   ) => {
-    return fn(state, options as ExtendedRunnableConfig);
+    // Extract the configurable object which contains our custom properties
+    const config = {
+      ...options,
+      ...options.configurable,
+    } as ExtendedRunnableConfig;
+    return fn(state, config);
   };
 };
 
