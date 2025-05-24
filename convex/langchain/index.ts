@@ -1,51 +1,55 @@
 "use node";
 
-import { internalAction } from "../_generated/server";
+import { internalAction } from "convex/_generated/server";
 import { v } from "convex/values";
-import { HumanMessage } from "@langchain/core/messages";
-import { internal } from "convex/_generated/api";
 import { agentGraph } from "./agent";
 import type { ActionCtx } from "convex/_generated/server";
-import type { Id } from "convex/_generated/dataModel";
+import type { Doc, Id } from "convex/_generated/dataModel";
+import { HumanMessage } from "@langchain/core/messages";
+import { formatDocument } from "./models";
+import { api, internal } from "convex/_generated/api";
 
 export const chat = internalAction({
   args: {
-    text: v.string(),
-    model: v.string(),
-    chatId: v.id("chats"),
-    agentMode: v.optional(v.boolean()),
-    smortMode: v.optional(v.boolean()),
-    webSearch: v.optional(v.boolean()),
-    projectId: v.optional(v.id("projects")),
-    excludeDocumentIds: v.optional(v.array(v.id("projectDocuments"))),
+    chatInputId: v.id("chatInput"),
   },
   handler: async (ctx, args) => {
-    const stream = await streamHelper(ctx, args);
+    const chatInput = await ctx.runQuery(api.chatInput.queries.getById, { chatInputId: args.chatInputId });
+    const stream = await streamHelper(ctx, { chatInput });
 
     for await (const event of stream) {
-      await ctx.runMutation(internal.routes.chatStream.appendStream, {
-        chatId: args.chatId,
+      await ctx.runMutation(internal.chatStream.mutations.appendStream, {
+        chatId: chatInput.chatId as Id<"chats">,
         content: JSON.stringify(event),
       });
     }
-
-    return null;
   },
 });
 
 async function* streamHelper(ctx: ActionCtx, args: {
-  text: string;
-  model: string;
-  chatId: string;
-  agentMode?: boolean;
-  smortMode?: boolean;
-  webSearch?: boolean;
-  projectId?: Id<"projects">;
-  excludeDocumentIds?: Id<"projectDocuments">[];
+  chatInput: Doc<"chatInput">;
 }) {
   const humanMessage = new HumanMessage({
-    content: args.text ?? "",
+    content: [
+      {
+        type: "text",
+        source_type: "text",
+        text: args.chatInput.text,
+      },
+      ...(args.chatInput.documents?.map(async (documentId) => {
+        const document = await ctx.runQuery(api.documents.queries.get, { documentId: documentId });
+        return formatDocument(document, args.chatInput.model!, ctx);
+      }) ?? []),
+    ]
   });
+  
+  await ctx.runMutation(api.chatInput.mutations.update, {
+    updates: {
+      text: "",
+      documents: [],
+    },
+    chatId: args.chatInput.chatId,
+  })
 
   const response = agentGraph.streamEvents({
     messages: [humanMessage],
@@ -53,13 +57,8 @@ async function* streamHelper(ctx: ActionCtx, args: {
     version: "v2",
     configurable: {
       ctx,
-      model: args.model,
-      agentMode: args.agentMode ?? false,
-      smortMode: args.smortMode ?? false,
-      webSearch: args.webSearch ?? true,
-      projectId: args.projectId,
-      excludeDocumentIds: args.excludeDocumentIds,
-      thread_id: args.chatId,
+      chatInput: args.chatInput,
+      thread_id: args.chatInput.chatId
     },
   });
 

@@ -33,19 +33,30 @@ export default defineSchema({
     text: v.optional(v.string()),
     projectId: v.optional(v.id("projects")),
     agentMode: v.optional(v.boolean()),
-    smortMode: v.optional(v.boolean()),
+    plannerMode: v.optional(v.boolean()),
     webSearch: v.optional(v.boolean()),
-    updatedAt: v.number(),
     model: v.optional(v.string()),
+    updatedAt: v.number(),
   })
     .index("by_user", ["userId"])
     .index("by_user_chat", ["chatId", "userId"]),
   chatStream: defineTable({
     chatId: v.id("chats"),
-    status: v.union(v.literal("pending"), v.literal("streaming"), v.literal("done"), v.literal("error")),
+    status: v.union(
+      v.literal("pending"),
+      v.literal("streaming"),
+      v.literal("done"),
+      v.literal("error"),
+    ),
     stream: v.optional(v.string()),
-  })
-    .index("by_chat", ["chatId"]),
+  }).index("by_chat", ["chatId"]),
+  interrupt: defineTable({
+    chatId: v.id("chats"),
+    userId: v.id("users"),
+    interrupt: v.boolean(),
+    humanMessage: v.optional(v.string()),
+    updatedAt: v.number(),
+  }).index("by_chat", ["chatId"]),
   projects: defineTable({
     name: v.string(),
     description: v.optional(v.string()),
@@ -63,6 +74,15 @@ export default defineSchema({
   })
     .index("by_project", ["projectId"])
     .index("by_project_document", ["projectId", "documentId"]),
+  projectVectors: defineTable({
+    embedding: v.array(v.number()),
+    text: v.string(),
+    metadata: v.any(),
+  }).vectorIndex("byEmbedding", {
+    vectorField: "embedding",
+    dimensions: 768,
+    filterFields: ["metadata"],
+  }),
   mcps: defineTable({
     name: v.string(),
     command: v.optional(v.string()),
@@ -79,5 +99,4 @@ export default defineSchema({
     .index("by_user_updated", ["userId", "updatedAt"])
     .index("by_user_created", ["userId", "createdAt"])
     .index("by_status", ["status"]),
-
 });

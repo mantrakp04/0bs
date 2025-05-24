@@ -1,12 +1,12 @@
 import { cronJobs } from "convex/server";
-import { api } from "./_generated/api";
+import { internal } from "./_generated/api";
 
 const crons = cronJobs();
 
 crons.interval(
   "stopIdle",
-  { minutes: 15 }, // every minute
-  api.actions.mcps.stopIdle,
+  { minutes: 15 },
+  internal.mcps.mutations.stopIdle,
 );
 
 export default crons;

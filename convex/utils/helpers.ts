@@ -1,5 +1,3 @@
-import { PersistentTextStreaming } from "@convex-dev/persistent-text-streaming";
-import { components } from "convex/_generated/api";
 import type { Id } from "convex/_generated/dataModel";
 import {
   type QueryCtx,
@@ -16,7 +14,3 @@ export async function requireAuth(ctx: QueryCtx | MutationCtx | ActionCtx) {
   const userId = user.subject.split("|")[0] as Id<"users">;
   return { user, userId };
 }
-
-export const persistentTextStreaming = new PersistentTextStreaming(
-  components.persistentTextStreaming,
-);

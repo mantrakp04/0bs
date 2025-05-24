@@ -1,5 +1,5 @@
 import { ScrollArea } from "@/components/ui/scroll-area";
-import { useAction, useMutation, useQuery } from "convex/react";
+import { useMutation, useQuery } from "convex/react";
 import { api } from "../../../../convex/_generated/api";
 import type { Doc, Id } from "../../../../convex/_generated/dataModel";
 import { useChat } from "@/store/use-chat";
@@ -30,8 +30,8 @@ interface ProjectDocumentProps {
 }
 
 const ProjectDocument = ({ projectDocument }: ProjectDocumentProps) => {
-  const updateProjectDocument = useMutation(api.routes.projectDocuments.update);
-  const removeDocument = useAction(api.actions.projectDocuments.remove);
+  const updateProjectDocument = useMutation(api.projectDocuments.mutations.update);
+  const removeDocument = useMutation(api.projectDocuments.mutations.remove);
 
   const getDocumentIcon = (type: string) => {
     switch (type) {
@@ -83,18 +83,18 @@ const ProjectDocument = ({ projectDocument }: ProjectDocumentProps) => {
 
 export const ProjectsPanel = () => {
   const { selectedProjectId, setSelectedProjectId, setProjectDialogOpen } = useChat();
-  const generateUploadUrl = useMutation(api.routes.documents.generateUploadUrl);
-  const updateProject = useMutation(api.routes.projects.update);
-  const addDocumentToProject = useAction(api.actions.projectDocuments.add);
-  const toggleSelectAll = useMutation(api.routes.projectDocuments.toggleSelect);
-  const createDocument = useMutation(api.routes.documents.create);
+  const generateUploadUrl = useMutation(api.documents.mutations.generateUploadUrl);
+  const updateProject = useMutation(api.projects.mutations.update);
+  const addDocumentToProject = useMutation(api.projectDocuments.mutations.create);
+  const toggleSelectAll = useMutation(api.projectDocuments.mutations.toggleSelect);
+  const createDocument = useMutation(api.documents.mutations.create);
 
-  const allProjects = useQuery(api.routes.projects.getAll, {
+  const allProjects = useQuery(api.projects.queries.getAll, {
     paginationOpts: { numItems: 20, cursor: null },
   });
 
   const project = useQuery(
-    api.routes.projects.get,
+    api.projects.queries.get,
     selectedProjectId
       ? {
           projectId: selectedProjectId as Id<"projects">,
@@ -103,7 +103,7 @@ export const ProjectsPanel = () => {
   );
 
   const projectDocuments = useQuery(
-    api.routes.projectDocuments.getAll,
+    api.projectDocuments.queries.getAll,
     selectedProjectId
       ? {
           projectId: selectedProjectId as Id<"projects">,

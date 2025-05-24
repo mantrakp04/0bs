@@ -1,36 +1,8 @@
-import { query, mutation, internalMutation } from "../_generated/server";
+import { requireAuth } from "convex/utils/helpers";
+import { internalMutation, mutation } from "convex/_generated/server";
 import { v } from "convex/values";
-import { requireAuth } from "../utils/helpers";
-import type { Id } from "../_generated/dataModel";
 import { api } from "convex/_generated/api";
-
-export const get = query({
-  args: {
-    chatId: v.union(v.id("chats"), v.literal("new")),
-  },
-  handler: async (ctx, args) => {
-    await requireAuth(ctx);
-
-    if (args.chatId !== "new") {
-      // Verify user owns the chat
-      await ctx.runQuery(api.routes.chats.get, {
-        chatId: args.chatId as Id<"chats">,
-      });
-
-      const chatStream = await ctx.db
-        .query("chatStream")
-        .withIndex("by_chat", (q) => q.eq("chatId", args.chatId as Id<"chats">))
-        .first();
-
-      return chatStream;
-    }
-
-    return {
-      status: "pending",
-      stream: "",
-    };
-  },
-});
+import type { Id } from "convex/_generated/dataModel";
 
 export const create = mutation({
   args: {
@@ -40,15 +12,15 @@ export const create = mutation({
         v.literal("pending"),
         v.literal("streaming"),
         v.literal("done"),
-        v.literal("error")
-      )
+        v.literal("error"),
+      ),
     ),
   },
   handler: async (ctx, args) => {
     await requireAuth(ctx);
 
     // Verify user owns the chat
-    await ctx.runQuery(api.routes.chats.get, {
+    await ctx.runQuery(api.chats.queries.get, {
       chatId: args.chatId as Id<"chats">,
     });
 
@@ -81,8 +53,8 @@ export const update = mutation({
           v.literal("pending"),
           v.literal("streaming"),
           v.literal("done"),
-          v.literal("error")
-        )
+          v.literal("error"),
+        ),
       ),
       stream: v.optional(v.string()),
     }),
@@ -91,7 +63,7 @@ export const update = mutation({
     await requireAuth(ctx);
 
     // Verify user owns the chat
-    await ctx.runQuery(api.routes.chats.get, {
+    await ctx.runQuery(api.chats.queries.get, {
       chatId: args.chatId as Id<"chats">,
     });
 
@@ -119,7 +91,7 @@ export const remove = mutation({
     await requireAuth(ctx);
 
     // Verify user owns the chat
-    await ctx.runQuery(api.routes.chats.get, {
+    await ctx.runQuery(api.chats.queries.get, {
       chatId: args.chatId as Id<"chats">,
     });
 
@@ -156,7 +128,7 @@ export const appendStream = internalMutation({
         status: "pending",
         stream: "",
       });
-      
+
       chatStream = await ctx.db.get(chatStreamId);
       if (!chatStream) {
         throw new Error("Failed to create chat stream");
@@ -179,7 +151,7 @@ export const setStatus = internalMutation({
       v.literal("pending"),
       v.literal("streaming"),
       v.literal("done"),
-      v.literal("error")
+      v.literal("error"),
     ),
   },
   returns: v.null(),

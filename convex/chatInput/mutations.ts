@@ -1,41 +1,6 @@
-import { query, mutation } from "../_generated/server";
+import { requireAuth } from "convex/utils/helpers";
+import { mutation } from "convex/_generated/server";
 import { v } from "convex/values";
-import { requireAuth } from "../utils/helpers";
-
-export const get = query({
-  args: {
-    chatId: v.union(v.id("chats"), v.literal("new")),
-  },
-  handler: async (ctx, args) => {
-    const { userId } = await requireAuth(ctx);
-
-    const chatInput = await ctx.db
-      .query("chatInput")
-      .withIndex("by_user_chat", (q) =>
-        q.eq("chatId", args.chatId).eq("userId", userId),
-      )
-      .first();
-    if (!chatInput && args.chatId !== "new") {
-      throw new Error("Chat input not found");
-    }
-
-    // Get chat
-    const chat = await ctx.db
-      .query("chats")
-      .withIndex("by_user", (q) => q.eq("userId", userId))
-      .filter((q) => q.eq(q.field("_id"), args.chatId))
-      .first();
-
-    if (!chat && args.chatId !== "new") {
-      throw new Error("Chat not found");
-    }
-
-    return {
-      ...chatInput,
-      chat,
-    };
-  },
-});
 
 export const create = mutation({
   args: {
@@ -45,7 +10,7 @@ export const create = mutation({
     projectId: v.optional(v.id("projects")),
     model: v.optional(v.string()),
     agentMode: v.optional(v.boolean()),
-    smortMode: v.optional(v.boolean()),
+    plannerMode: v.optional(v.boolean()),
     webSearch: v.optional(v.boolean()),
   },
   handler: async (ctx, args) => {
@@ -82,7 +47,7 @@ export const create = mutation({
       projectId: args.projectId,
       model: args.model,
       agentMode: args.agentMode,
-      smortMode: args.smortMode,
+      plannerMode: args.plannerMode,
       webSearch: args.webSearch,
       updatedAt: Date.now(),
     });
@@ -108,7 +73,7 @@ export const update = mutation({
       projectId: v.optional(v.id("projects")),
       model: v.optional(v.string()),
       agentMode: v.optional(v.boolean()),
-      smortMode: v.optional(v.boolean()),
+      plannerMode: v.optional(v.boolean()),
       webSearch: v.optional(v.boolean()),
     }),
   },

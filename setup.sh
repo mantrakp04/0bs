@@ -9,22 +9,25 @@ echo "Starting setup process..."
 echo "Starting Docker containers..."
 bun d:up
 
-# Check if CONVEX_SELF_HOSTED_ADMIN_KEY exists in .env.local
-if ! grep -q "CONVEX_SELF_HOSTED_ADMIN_KEY" .env.local 2>/dev/null; then
-    echo "Generating admin key..."
-    # Run the keygen command and extract the key
-    ADMIN_KEY=$(docker-compose -f docker/docker-compose.yml exec -T backend ./generate_admin_key.sh | grep "convex-self-hosted|" | tr -d '\r')
-    
-    # Add or update the key in .env.local
-    if [ -f .env.local ]; then
-        # If file exists, append the key
-        echo "CONVEX_SELF_HOSTED_ADMIN_KEY=$ADMIN_KEY" >> .env.local
-    else
-        # If file doesn't exist, create it with the key
-        echo "CONVEX_SELF_HOSTED_ADMIN_KEY=$ADMIN_KEY" > .env.local
-    fi
-    echo "Admin key has been added to .env.local"
+# Always generate a fresh admin key
+echo "Generating admin key..."
+# Run the keygen command and extract the key - the key is output directly without "Admin key:" prefix
+ADMIN_KEY=$(bun d:keygen | tail -n 1)
+if [ -z "$ADMIN_KEY" ]; then
+    echo "Failed to generate admin key"
+    exit 1
 fi
+
+# Update or create .env.local with the new key
+if [ -f .env.local ]; then
+    # If file exists, remove old key and add new one
+    sed -i '/CONVEX_SELF_HOSTED_ADMIN_KEY/d' .env.local
+    echo "CONVEX_SELF_HOSTED_ADMIN_KEY=$ADMIN_KEY" >> .env.local
+else
+    # If file doesn't exist, create it with the key
+    echo "CONVEX_SELF_HOSTED_ADMIN_KEY=$ADMIN_KEY" > .env.local
+fi
+echo "Admin key has been added to .env.local"
 
 # Run the generateKeys.mjs script and execute its output commands
 echo "Setting up JWT keys..."
@@ -36,4 +39,5 @@ while IFS= read -r cmd; do
     fi
 done < <(bun generateKeys.mjs)
 
+clear
 echo "Setup completed successfully!" 

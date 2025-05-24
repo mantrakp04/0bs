@@ -35,7 +35,6 @@ import { api } from "../../../../../convex/_generated/api";
 import { useNavigate, useParams } from "@tanstack/react-router";
 import type { Id } from "convex/_generated/dataModel";
 import { useEffect, useRef, useState } from "react";
-import type { GetModelResult } from "../../../../../convex/actions/models";
 import { Badge } from "@/components/ui/badge";
 import { toast } from "sonner";
 import {
@@ -74,19 +73,19 @@ export const Toolbar = () => {
   const chatId = params?.chatId as Id<"chats"> | "new";
   const fileInputRef = useRef<HTMLInputElement>(null);
 
-  const chatInput = useQuery(api.routes.chatInput.get, {
+  const chatInput = useQuery(api.chatInput.queries.get, {
     chatId,
   });
-  const updateChatInputMutation = useMutation(api.routes.chatInput.update);
+  const updateChatInputMutation = useMutation(api.chatInput.mutations.update);
   const generateUploadUrlMutation = useMutation(
-    api.routes.documents.generateUploadUrl,
+    api.documents.mutations.generateUploadUrl,
   );
-  const createDocumentMutation = useMutation(api.routes.documents.create);
-  const getModelAction = useAction(api.actions.models.getModel);
-  const createChatMutation = useMutation(api.routes.chats.create);
-  const createChatInputMutation = useMutation(api.routes.chatInput.create);
-  const sendAction = useAction(api.routes.chats.send);
-  const [getModelResult, setGetModelResult] = useState<GetModelResult | null>(null);
+  const createDocumentMutation = useMutation(api.documents.mutations.create);
+  const getModelAction = useAction(api.chatInput.actions.getModels);
+  const createChatMutation = useMutation(api.chats.mutations.create);
+  const createChatInputMutation = useMutation(api.chatInput.mutations.create);
+  const sendAction = useAction(api.chats.actions.send);
+  const [getModelResult, setGetModelResult] = useState<Awaited<ReturnType<typeof getModelAction>> | null>(null);
 
   useEffect(() => {
     const fetchModel = async () => {
@@ -106,13 +105,13 @@ export const Toolbar = () => {
       });
       await createChatInputMutation({
         chatId: newChatId,
-        text: chatInput?.text,
         documents: chatInput?.documents,
-        model: getModelResult?.selectedModel ?? "",
-        agentMode: chatInput?.agentMode,
-        smortMode: chatInput?.smortMode,
-        webSearch: chatInput?.webSearch,
+        text: chatInput?.text,
         projectId: chatInput?.projectId,
+        plannerMode: chatInput?.plannerMode,
+        agentMode: chatInput?.agentMode,
+        webSearch: chatInput?.webSearch,
+        model: getModelResult?.selectedModel.model ?? "",
       });
       toChatId = newChatId;
       await navigate({ to: "/chat/$chatId", params: { chatId: newChatId } });
@@ -216,11 +215,11 @@ export const Toolbar = () => {
           Agent
         </Toggle>
 
-        <Toggle variant="outline" className="bg-input/30" pressed={chatInput?.smortMode} onPressedChange={() => {
+        <Toggle variant="outline" className="bg-input/30" pressed={chatInput?.plannerMode} onPressedChange={() => {
           updateChatInputMutation({
             chatId,
             updates: {
-              smortMode: !chatInput?.smortMode,
+              plannerMode: !chatInput?.plannerMode,
             },
           });
         }}>
@@ -229,7 +228,7 @@ export const Toolbar = () => {
         </Toggle>
 
         <Tooltip delayDuration={300}>
-          <TooltipTrigger asChild>
+          <TooltipTrigger>
             <Toggle variant="outline" className="bg-input/30" pressed={chatInput?.webSearch} onPressedChange={() => {
               updateChatInputMutation({
                 chatId,
@@ -270,16 +269,16 @@ export const Toolbar = () => {
             })
           }
         >
-          <SelectTrigger>{getModelResult?.selectedModel}</SelectTrigger>
+          <SelectTrigger>{getModelResult?.selectedModel.label}</SelectTrigger>
           <SelectContent>
-            {getModelResult?.config?.model_list.map((model) => (
+            {getModelResult?.models.map((model) => (
               <SelectItem
-                key={model.model_name}
-                value={model.model_name}
+                key={model.model}
+                value={model.model}
                 className="min-w-[500px]"
               >
                 <div className="flex flex-col w-full gap-2">
-                  <span>{model.model_name}</span>
+                  <span>{model.label}</span>
                   {model.tags && (
                     <div className="flex flex-row gap-1">
                       {model.tags?.map((tag) => {

@@ -5,7 +5,7 @@ import { auth } from "./auth";
 const http = httpRouter();
 const cors = corsRouter(http, {
   allowedHeaders: ["*"],
-  allowedOrigins: ["http://localhost:3000"]
+  allowedOrigins: ["http://localhost:3000"],
 });
 
 auth.addHttpRoutes(http);

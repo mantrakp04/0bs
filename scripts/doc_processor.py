@@ -25,7 +25,7 @@ def verify_token(credentials: HTTPAuthorizationCredentials = Depends(security)):
 @app.get("/convert/")
 async def convert_document(
     token: str = Depends(verify_token),
-    source: str = "https://arxiv.org/pdf/2408.09869"
+    source: str = Query("https://arxiv.org/pdf/2408.09869", description="The URL of the document to convert")
 ):
     async with httpx.AsyncClient() as client:
         response = await client.get(source)

@@ -1,72 +1,7 @@
-import { query, mutation } from "../_generated/server";
+import { mutation } from "convex/_generated/server";
+import { requireAuth } from "convex/utils/helpers";
 import { v } from "convex/values";
-import { requireAuth } from "../utils/helpers";
-import { paginationOptsValidator } from "convex/server";
-
-export const get = query({
-  args: {
-    projectId: v.id("projects"),
-  },
-  handler: async (ctx, args) => {
-    const { userId } = await requireAuth(ctx);
-
-    const project = await ctx.db
-      .query("projects")
-      .withIndex("by_user", (q) => q.eq("userId", userId))
-      .filter((q) => q.eq(q.field("_id"), args.projectId))
-      .first();
-
-    if (!project) {
-      throw new Error("Project not found");
-    }
-
-    return project;
-  },
-});
-
-export const getAll = query({
-  args: {
-    paginationOpts: paginationOptsValidator,
-  },
-  handler: async (ctx, args) => {
-    const { userId } = await requireAuth(ctx);
-
-    const projects = await ctx.db
-      .query("projects")
-      .withIndex("by_user", (q) => q.eq("userId", userId))
-      .order("desc")
-      .paginate(args.paginationOpts);
-
-    return projects;
-  },
-});
-
-export const getMultiple = query({
-  args: {
-    projectIds: v.array(v.id("projects")),
-  },
-  handler: async (ctx, args) => {
-    const { userId } = await requireAuth(ctx);
-
-    const projects = await Promise.all(
-      args.projectIds.map(async (projectId) => {
-        const project = await ctx.db
-          .query("projects")
-          .withIndex("by_user", (q) => q.eq("userId", userId))
-          .filter((q) => q.eq(q.field("_id"), projectId))
-          .first();
-
-        if (!project) {
-          throw new Error("Project not found");
-        }
-
-        return project;
-      }),
-    );
-
-    return projects;
-  },
-});
+import { api } from "convex/_generated/api";
 
 export const create = mutation({
   args: {
@@ -143,6 +78,22 @@ export const remove = mutation({
       throw new Error("Project not found");
     }
 
+    // First get all project documents
+    const projectDocuments = await ctx.db
+      .query("projectDocuments")
+      .withIndex("by_project", (q) => q.eq("projectId", args.projectId))
+      .collect();
+
+    // Delete all project documents
+    await Promise.all(
+      projectDocuments.map((projectDocument) =>
+        ctx.runMutation(api.projectDocuments.mutations.remove, {
+          projectDocumentId: projectDocument._id,
+        }),
+      ),
+    );
+
+    // Finally delete the project
     await ctx.db.delete(args.projectId);
 
     return true;

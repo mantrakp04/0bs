@@ -14,7 +14,7 @@ export const DocumentList = ({
   documentIds?: Id<"documents">[];
   onRemove?: (documentId: Id<"documents">) => void;
 }) => {
-  const documents = useQuery(api.routes.documents.getMultiple, {
+  const documents = useQuery(api.documents.queries.getMultiple, {
     documentIds,
   });
 

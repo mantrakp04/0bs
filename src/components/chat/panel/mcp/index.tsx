@@ -1,5 +1,5 @@
 import { useState } from "react";
-import { useQuery, useMutation, useAction } from "convex/react";
+import { useQuery, useMutation } from "convex/react";
 import { api } from "../../../../../convex/_generated/api";
 import type { Id } from "../../../../../convex/_generated/dataModel";
 import type { NewMCPData } from "./types";
@@ -8,14 +8,13 @@ import { MCPCard } from "./mcp-card";
 
 export const MCPPanel = () => {
   const [isCreateOpen, setIsCreateOpen] = useState(false);
-  const mcps = useQuery(api.routes.mcps.getAll, {
+  const mcps = useQuery(api.mcps.queries.getAll, {
     paginationOpts: { numItems: 100, cursor: null },
   });
 
-  const createMCP = useMutation(api.routes.mcps.create);
-  const removeMCP = useMutation(api.routes.mcps.remove);
-  const startMCP = useAction(api.actions.mcps.start);
-  const stopMCP = useAction(api.actions.mcps.stop);
+  const createMCP = useMutation(api.mcps.mutations.create);
+  const removeMCP = useMutation(api.mcps.mutations.remove);
+  const toggleMCP = useMutation(api.mcps.mutations.toggle);
 
   const handleCreate = async (newMCPData: NewMCPData) => {
     try {
@@ -28,7 +27,7 @@ export const MCPPanel = () => {
             )
           : {};
 
-      const mcpId = await createMCP({
+      await createMCP({
         name: newMCPData.name,
         command:
           newMCPData.type === "stdio" ? newMCPData.command : newMCPData.url,
@@ -36,7 +35,6 @@ export const MCPPanel = () => {
         status: "stopped",
       });
 
-      await startMCP({ mcpId });
       setIsCreateOpen(false);
     } catch (error) {
       console.error("Failed to create MCP:", error);
@@ -45,20 +43,15 @@ export const MCPPanel = () => {
 
   const handleDelete = async (mcpId: Id<"mcps">) => {
     try {
-      await stopMCP({ mcpId });
       await removeMCP({ mcpId });
     } catch (error) {
       console.error("Failed to delete MCP:", error);
     }
   };
 
-  const handleStartStop = async (mcpId: Id<"mcps">, isRunning: boolean) => {
+  const handleStartStop = async (mcpId: Id<"mcps">) => {
     try {
-      if (isRunning) {
-        await stopMCP({ mcpId });
-      } else {
-        await startMCP({ mcpId });
-      }
+      await toggleMCP({ mcpId });
     } catch (error) {
       console.error("Failed to start/stop MCP:", error);
     }

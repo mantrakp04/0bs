@@ -1,12 +1,12 @@
 import { api } from "../../../../convex/_generated/api";
 import { useQuery } from "convex/react";
 import { useParams } from "@tanstack/react-router";
-import type { Id } from "../../../../convex/_generated/dataModel";
+import type { Id } from "convex/_generated/dataModel";
 import { ScrollArea } from "@/components/ui/scroll-area";
 
 export const ChatMessages = () => {
   const params = useParams({ from: "/chat_/$chatId/" });
-  const chatStream = useQuery(api.routes.chatStream.get, {
+  const chatStream = useQuery(api.chatStream.queries.get, {
     chatId: params.chatId as Id<"chats">,
   });
 

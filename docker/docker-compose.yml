@@ -42,7 +42,8 @@ services:
       interval: 5s
       start_period: 10s
     depends_on:
-      - database
+      database:
+        condition: service_healthy
 
   dashboard:
     image: ghcr.io/get-convex/convex-dashboard:e8d532c70292c89217e8669473bd024f6fe6c239
@@ -56,16 +57,20 @@ services:
       backend:
         condition: service_healthy
 
-  litellm:
-    image: ghcr.io/berriai/litellm:main-latest
-    ports:
-      - "4000:4000"
-    volumes:
-      - ../litellm_config.yaml:/app/config.yaml
-    env_file:
-      - ../.env.local
-    command:
-      ["--config", "/app/config.yaml", "--port", "4000", "--num_workers", "8"]
+  # litellm:
+  #   image: ghcr.io/berriai/litellm:main-latest
+  #   ports:
+  #     - "4000:4000"
+  #   volumes:
+  #     - ../litellm_config.yaml:/app/config.yaml
+  #   env_file:
+  #     - ../.env.local
+  #   environment:
+  #     - LITELLM_MASTER_KEY=${LITELLM_MASTER_KEY:-sk-1234}
+  #     - LITELLM_SALT_KEY=${LITELLM_SALT_KEY:-sk-1234}
+  #     - DATABASE_URL=${DATABASE_URL:-postgres://postgres:postgres@database:5432}
+  #   command:
+  #     ["--config", "/app/config.yaml", "--port", "4000", "--num_workers", "8"]
 
   database:
     image: postgres:latest
@@ -77,28 +82,34 @@ services:
       POSTGRES_DB: convex_self_hosted
     volumes:
       - data:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U postgres"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+      start_period: 30s
 
-  weaviate:
-    image: cr.weaviate.io/semitechnologies/weaviate:1.30.3
-    ports:
-      - 8080:8080
-      - 50051:50051
-    command:
-      - --host
-      - 0.0.0.0
-      - --port
-      - '8080'
-      - --scheme
-      - http
-    volumes:
-      - "data:/var/lib/weaviate"
-    restart: on-failure:0
-    environment:
-      QUERY_DEFAULTS_LIMIT: 25
-      AUTHENTICATION_ANONYMOUS_ACCESS_ENABLED: 'true'
-      PERSISTENCE_DATA_PATH: '/var/lib/weaviate'
-      ENABLE_API_BASED_MODULES: 'true'
-      CLUSTER_HOSTNAME: 'node1'
+  # weaviate:
+  #   image: cr.weaviate.io/semitechnologies/weaviate:1.30.3
+  #   ports:
+  #     - 8080:8080
+  #     - 50051:50051
+  #   command:
+  #     - --host
+  #     - 0.0.0.0
+  #     - --port
+  #     - '8080'
+  #     - --scheme
+  #     - http
+  #   volumes:
+  #     - "data:/var/lib/weaviate"
+  #   restart: on-failure:0
+  #   environment:
+  #     QUERY_DEFAULTS_LIMIT: 25
+  #     AUTHENTICATION_ANONYMOUS_ACCESS_ENABLED: 'true'
+  #     PERSISTENCE_DATA_PATH: '/var/lib/weaviate'
+  #     ENABLE_API_BASED_MODULES: 'true'
+  #     CLUSTER_HOSTNAME: 'node1'
 
   services:
     build:

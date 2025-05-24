@@ -1,94 +1,7 @@
-import { query, mutation } from "../_generated/server";
+import { internal } from "convex/_generated/api";
+import { internalMutation, mutation } from "convex/_generated/server";
+import { requireAuth } from "convex/utils/helpers";
 import { v } from "convex/values";
-import { requireAuth } from "../utils/helpers";
-import { paginationOptsValidator } from "convex/server";
-import { api } from "convex/_generated/api";
-import type { Doc } from "convex/_generated/dataModel";
-import { crud } from "convex-helpers/server/crud";
-import schema from "../schema.js";
-
-export const {
-  create: mcpCreate,
-  read: mcpRead,
-  update: mcpUpdate,
-  destroy: mcpDestroy,
-} = crud(schema, "mcps");
-
-export const get = query({
-  args: {
-    mcpId: v.id("mcps"),
-  },
-  handler: async (ctx, args) => {
-    const { userId } = await requireAuth(ctx);
-
-    const mcp = await ctx.db
-      .query("mcps")
-      .withIndex("by_user", (q) => q.eq("userId", userId))
-      .filter((q) => q.eq(q.field("_id"), args.mcpId))
-      .first();
-
-    if (!mcp) {
-      throw new Error("MCP not found");
-    }
-
-    return mcp;
-  },
-});
-
-export const getAll = query({
-  args: {
-    paginationOpts: paginationOptsValidator,
-    filter: v.optional(
-      v.object({
-        status: v.optional(
-          v.union(
-            v.literal("running"),
-            v.literal("stopped"),
-            v.literal("error"),
-          ),
-        ),
-      }),
-    ),
-  },
-  handler: async (ctx, args) => {
-    const { userId } = await requireAuth(ctx);
-
-    const mcps = await ctx.db
-      .query("mcps")
-      .withIndex("by_user", (q) => q.eq("userId", userId))
-      .filter((q) =>
-        args.filter?.status
-          ? q.eq(q.field("status"), args.filter.status)
-          : q.eq(1, 1),
-      )
-      .paginate(args.paginationOpts);
-
-    return mcps;
-  },
-});
-
-export const getMultiple = query({
-  args: {
-    mcpIds: v.array(v.id("mcps")),
-  },
-  handler: async (ctx, args): Promise<Doc<"mcps">[]> => {
-    await requireAuth(ctx);
-
-    const mcps = await Promise.all(
-      args.mcpIds.map(async (mcpId) => {
-        const mcp = await ctx.runQuery(api.routes.mcps.get, {
-          mcpId: mcpId,
-        });
-        if (!mcp) {
-          throw new Error("MCP not found");
-        }
-        return mcp;
-      }),
-    );
-
-    return mcps;
-  },
-});
 
 export const create = mutation({
   args: {
@@ -116,6 +29,10 @@ export const create = mutation({
       userId: userId,
       createdAt: Date.now(),
       updatedAt: Date.now(),
+    });
+
+    await ctx.scheduler.runAfter(0, internal.mcps.actions.start, {
+      mcpId: newMCPId,
     });
 
     return newMCPId;
@@ -173,8 +90,73 @@ export const remove = mutation({
     if (!existingMCP) {
       throw new Error("MCP not found");
     }
+    
+    await ctx.scheduler.runAfter(0, internal.mcps.actions.stop, {
+      mcpId: args.mcpId,
+    });
 
     await ctx.db.delete(args.mcpId);
+
+    return null;
+  },
+});
+
+export const toggle = mutation({
+  args: {
+    mcpId: v.id("mcps"),
+  },
+  handler: async (ctx, args) => {
+    const { userId } = await requireAuth(ctx);
+
+    const existingMCP = await ctx.db
+      .query("mcps")
+      .withIndex("by_user", (q) => q.eq("userId", userId))
+      .filter((q) => q.eq(q.field("_id"), args.mcpId))
+      .first();
+
+    if (!existingMCP) {
+      throw new Error("MCP not found");
+    }
+
+    if (existingMCP.status === "running") {
+      await ctx.scheduler.runAfter(0, internal.mcps.actions.stop, {
+        mcpId: args.mcpId,
+      });
+    } else {
+      await ctx.scheduler.runAfter(0, internal.mcps.actions.start, {
+        mcpId: args.mcpId,
+      });
+    }
+
+    return null;
+  },
+});
+
+export const stopIdle = internalMutation({
+  handler: async (ctx) => {
+    const idleContainers = await ctx.db.query("mcps")
+      .filter((q) => q.and(
+        q.eq(q.field("status"), "running"),
+        q.lt(q.field("updatedAt"), Date.now() - 15 * 60 * 1000),
+      ))
+      .collect();
+
+    await Promise.all(idleContainers.map((c) => ctx.scheduler.runAfter(0, internal.mcps.actions.stop, {
+      mcpId: c._id,
+    })));
+
+    return null;
+  },
+});
+
+export const ensureRunning = internalMutation({
+  args: {
+    mcpIds: v.array(v.id("mcps")),
+  },
+  handler: async (ctx, args) => {
+    const mcps = await Promise.all(args.mcpIds.map((id) => ctx.runQuery(internal.mcps.crud.read, { id })));
+
+    await Promise.all(mcps.map((mcp) => mcp && ctx.scheduler.runAfter(0, internal.mcps.actions.start, { mcpId: mcp._id })));
 
     return null;
   },

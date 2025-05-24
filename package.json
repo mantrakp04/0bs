@@ -17,10 +17,11 @@
   "dependencies": {
     "@auth/core": "0.37.0",
     "@convex-dev/auth": "^0.0.83",
-    "@convex-dev/persistent-text-streaming": "^0.2.2",
     "@hookform/resolvers": "^5.0.1",
+    "@langchain/anthropic": "^0.3.21",
     "@langchain/community": "^0.3.42",
     "@langchain/core": "^0.3.56",
+    "@langchain/google-genai": "^0.2.9",
     "@langchain/langgraph": "^0.2.69",
     "@langchain/langgraph-checkpoint-postgres": "^0.0.5",
     "@langchain/langgraph-supervisor": "^0.0.11",

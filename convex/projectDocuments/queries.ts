@@ -1,9 +1,9 @@
-import { query, mutation } from "../_generated/server";
+import { requireAuth } from "convex/utils/helpers";
+import { query } from "convex/_generated/server";
 import { v } from "convex/values";
-import { requireAuth } from "../utils/helpers";
-import { paginationOptsValidator } from "convex/server";
 import { api } from "convex/_generated/api";
 import type { Id, Doc } from "convex/_generated/dataModel";
+import { paginationOptsValidator } from "convex/server";
 
 export const get = query({
   args: {
@@ -25,14 +25,14 @@ export const get = query({
       throw new Error("Project document not found");
     }
 
-    const project = await ctx.runQuery(api.routes.projects.get, {
+    const project = await ctx.runQuery(api.projects.queries.get, {
       projectId: projectDocument.projectId as Id<"projects">,
     });
     if (!project) {
       throw new Error("Project not found");
     }
 
-    const document = await ctx.runQuery(api.routes.documents.get, {
+    const document = await ctx.runQuery(api.documents.queries.get, {
       documentId: projectDocument.documentId as Id<"documents">,
     });
     if (!document) {
@@ -63,7 +63,7 @@ export const getAll = query({
   }> => {
     await requireAuth(ctx);
 
-    const project = await ctx.runQuery(api.routes.projects.get, {
+    const project = await ctx.runQuery(api.projects.queries.get, {
       projectId: args.projectId,
     });
     if (!project) {
@@ -82,7 +82,7 @@ export const getAll = query({
       };
     }
 
-    const documents = await ctx.runQuery(api.routes.documents.getMultiple, {
+    const documents = await ctx.runQuery(api.documents.queries.getMultiple, {
       documentIds: projectDocuments.page.map(
         (projectDocument) => projectDocument.documentId,
       ),
@@ -92,7 +92,9 @@ export const getAll = query({
     }
 
     const documentsMap = new Map<Id<"documents">, Doc<"documents">>();
-    documents.forEach((document) => documentsMap.set(document._id, document));
+    documents.forEach((document: Doc<"documents">) =>
+      documentsMap.set(document._id, document),
+    );
 
     const projectDocumentsMap = new Map<
       Id<"projectDocuments">,
@@ -136,7 +138,7 @@ export const getMultiple = query({
     return await Promise.all(
       args.projectDocumentIds.map(async (projectDocumentId) => {
         const projectDocument = await ctx.runQuery(
-          api.routes.projectDocuments.get,
+          api.projectDocuments.queries.get,
           {
             projectDocumentId,
           },
@@ -148,123 +150,6 @@ export const getMultiple = query({
         return projectDocument;
       }),
     );
-  },
-});
-
-export const create = mutation({
-  args: {
-    projectId: v.id("projects"),
-    documentId: v.id("documents"),
-  },
-  handler: async (ctx, args) => {
-    await requireAuth(ctx);
-
-    const project = await ctx.runQuery(api.routes.projects.get, {
-      projectId: args.projectId,
-    });
-    if (!project) {
-      throw new Error("Project not found");
-    }
-
-    const document = await ctx.runQuery(api.routes.documents.get, {
-      documentId: args.documentId,
-    });
-    if (!document) {
-      throw new Error("Document not found");
-    }
-
-    const projectDocument = await ctx.db.insert("projectDocuments", {
-      projectId: args.projectId,
-      documentId: args.documentId,
-      selected: true,
-      updatedAt: Date.now(),
-    });
-
-    return projectDocument;
-  },
-});
-
-export const update = mutation({
-  args: {
-    projectDocumentId: v.id("projectDocuments"),
-    update: v.object({
-      selected: v.optional(v.boolean()),
-    }),
-  },
-  handler: async (ctx, args) => {
-    await requireAuth(ctx);
-
-    const projectDocument = await ctx.runQuery(
-      api.routes.projectDocuments.get,
-      {
-        projectDocumentId: args.projectDocumentId,
-      },
-    );
-    if (!projectDocument) {
-      throw new Error("Project document not found");
-    }
-
-    await ctx.db.patch(args.projectDocumentId, {
-      ...args.update,
-      updatedAt: Date.now(),
-    });
-
-    return true;
-  },
-});
-
-export const remove = mutation({
-  args: {
-    projectDocumentId: v.id("projectDocuments"),
-  },
-  handler: async (ctx, args) => {
-    await requireAuth(ctx);
-
-    const projectDocument = await ctx.runQuery(
-      api.routes.projectDocuments.get,
-      {
-        projectDocumentId: args.projectDocumentId,
-      },
-    );
-    if (!projectDocument) {
-      throw new Error("Project document not found");
-    }
-
-    await ctx.db.delete(args.projectDocumentId);
-    return true;
-  },
-});
-
-export const toggleSelect = mutation({
-  args: {
-    projectId: v.id("projects"),
-    selected: v.boolean(),
-  },
-  handler: async (ctx, args) => {
-    await requireAuth(ctx);
-
-    const project = await ctx.runQuery(api.routes.projects.get, {
-      projectId: args.projectId,
-    });
-    if (!project) {
-      throw new Error("Project not found");
-    }
-
-    const projectDocuments = await ctx.db
-      .query("projectDocuments")
-      .withIndex("by_project", (q) => q.eq("projectId", args.projectId))
-      .collect();
-
-    await Promise.all(
-      projectDocuments.map((projectDocument) =>
-        ctx.runMutation(api.routes.projectDocuments.update, {
-          projectDocumentId: projectDocument._id,
-          update: { selected: args.selected },
-        }),
-      ),
-    );
-
-    return true;
   },
 });
 

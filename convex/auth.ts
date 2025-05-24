@@ -25,10 +25,10 @@ export const { auth, signIn, signOut, store, isAuthenticated } = convexAuth({
       await ctx.db.insert("chatInput", {
         chatId: "new",
         userId: args.userId,
-        updatedAt: Date.now(),
         agentMode: false,
-        smortMode: false,
+        plannerMode: false,
         webSearch: false,
+        updatedAt: Date.now(),
       });
     },
   },

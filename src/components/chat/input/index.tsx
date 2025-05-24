@@ -11,11 +11,11 @@ import { Toolbar } from "./toolbar";
 export const ChatInput = () => {
   const { chatId } = useParams({ from: "/chat_/$chatId/" });
 
-  const chatInput = useQuery(api.routes.chatInput.get, {
+  const chatInput = useQuery(api.chatInput.queries.get, {
     chatId: chatId as Id<"chats"> | "new",
   });
 
-  const updateChatInput = useMutation(api.routes.chatInput.update);
+  const updateChatInput = useMutation(api.chatInput.mutations.update);
 
   const debouncedUpdate = useDebouncedCallback((value: string) => {
     updateChatInput({
