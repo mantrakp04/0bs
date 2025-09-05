@@ -1,7 +1,5 @@
-### todo
+# IMPORTANT
 
-- [x] moving to clerk
-
-- [x] adding custom sign-in page + routes configuration
-
-- [ ] revamp ui (minimal and simple)
+- project moved to
+  - [Repo](https://github.com/0bs-chat/zerobs)
+  - [Services](https://github.com/orgs/0bs-chat/repositories?type=source)
